@@ -143,7 +143,7 @@ class Nic
       return      
     end
     
-    case params["nictype#{nic_id}"]
+    self.chip = case params["nictype#{nic_id}"]
     when 'Am79C970A', 'Am79C973',
       :amd
     when '82543GC'

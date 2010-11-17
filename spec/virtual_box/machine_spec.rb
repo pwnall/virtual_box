@@ -30,11 +30,10 @@ describe 'Machine' do
     end
     
     it 'should push/pull specs correctly' do
-      old_specs = @vm.specs.to_hash
+      vm = VirtualBox::Vm.new :uid => @vm.uid
       
-      @vm.specs.reset
-      @vm.pull_config
-      @vm.specs.to_hash.should == old_specs
+      vm.pull_config
+      vm.specs.to_hash.should == @vm.specs.to_hash
     end
   end
 end

@@ -40,7 +40,7 @@ describe 'VM' do
         end        
         after do
           @vm.stop
-          sleep 0.5
+          sleep 0.5  # VirtualBox will barf if we unregister the VM right away.
         end
         
         it 'should show up on the list of started VM UIDs' do

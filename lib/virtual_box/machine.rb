@@ -136,7 +136,7 @@ class Machine
     self.io_apic = params['io_apic'] == 'on'    
 
     self.hardware_virtualization = params['hwvirtex'] == 'on'    
-    self.nested_paging = params['nested_paging'] == 'on'    
+    self.nested_paging = params['nestedpaging'] == 'on'    
     self.tagged_tlb = params['vtxvpid'] == 'on'    
 
     self.efi = params['firmware'] == 'efi'
@@ -144,7 +144,7 @@ class Machine
     self.bios_logo_fade_out = params['bioslogofadeout'] == 'on'
     self.bios_logo_display_time = params['bioslogodisplaytime'].to_i
     
-    self.bios_boot_menu = case params['biosbootmenu']
+    self.bios_boot_menu = case params['bootmenu']
     when 'disabled'
        false
     when 'message'

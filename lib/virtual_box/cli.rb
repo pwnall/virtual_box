@@ -16,9 +16,7 @@ module VirtualBox
 #       :status:: the command's exit status
 #       :output:: a string with the command's output 
 def self.run_command(args)
-  p args
   output = Kernel.`(Shellwords.shelljoin(args))
-  puts output
   Hashie::Mash.new :status => $CHILD_STATUS.exitstatus, :output => output
 end
 

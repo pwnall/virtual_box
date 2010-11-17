@@ -14,11 +14,10 @@ describe 'Nic' do
     end
     
     it 'should push/pull specs correctly' do
-      old_specs = @vm.nics.map { |nic| nic.to_hash }
-      
-      @vm.specs.reset
-      @vm.pull_config
-      @vm.nics.map { |nic| nic.to_hash }.should == old_specs
+      vm = VirtualBox::Vm.new :uid => @vm.uid
+      vm.pull_config
+      vm.nics.map { |nic| nic.to_hash }.should ==
+          @vm.nics.map { |nic| nic.to_hash }
     end
   end
 end
