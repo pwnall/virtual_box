@@ -232,7 +232,7 @@ class Machine
     end
     
     types = result.output.split("\n\n").map do |os_info|
-      i = Hash[os_info.split("\n").map { |line| line.split(':').map(&:strip)}]
+      i = Hash[os_info.split("\n").map { |line| line.split(':').map(&:strip) }]
       [i['ID'], i['Description']]
     end
     Hash[types]

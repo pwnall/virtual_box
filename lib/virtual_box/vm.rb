@@ -46,7 +46,7 @@ class Vm
   #
   # This does not register the VM with VirtualBox.
   def initialize(options = {})
-    self.nics = Array.new(4) { VirtualBox::Nic.new :mode => :none }
+    self.nics = Array.new(8) { VirtualBox::Nic.new :mode => :none }
     options.each { |k, v| self.send :"#{k}=", v }
   end
   
@@ -202,7 +202,12 @@ class Vm
     self.name = config['name']
     self.uid = config['UUID']
     specs.from_params config
-    nics.each_with_index { |nic, index| nic.from_params(config, index + 1) }
+    
+    nic_count = config.keys.select { |key| /^nic\d+$/ =~ key }.max[3..-1].to_i
+    1.upto(nic_count) do |index|
+      nics[index - 1] ||= VirtualBox::Nic.new
+      nics[index - 1].from_params config, index
+    end
     
     self
   end

@@ -64,7 +64,7 @@ class Nic
   undef :mac=
   # :nodoc: defined as accessor
   def mac=(new_mac)
-    @mac = new_mac && new_mac.upcase
+    @mac = new_mac && new_mac.upcase.gsub(/[^0-9A-F]/, '')
   end
   
   # Creates a NIC with the given attributes
@@ -170,6 +170,38 @@ class Nic
   def to_hash
     { :mode => mode, :chip => chip, :net_id => net_id, :mac => mac,
       :trace_file => trace_file }
+  end
+  
+  # Information about the NICs attached to the computer.
+  #
+  # Returns an array of hashes with the following keys:
+  #   :id:: the inteface id (use when setting a Nic's net_id)
+  #   :ip:: the IP address (check for 0.0.0.0 to see if it's live)
+  #   :mask:: the netmask
+  #   :mac:: the NICs MAC address
+  def self.host_nics
+    @host_nics ||= get_host_nics
+  end
+
+  # Queries VirtualBox for the network interfaces on the computer.
+  #
+  # See host_nics for return type.  
+  def self.get_host_nics    
+    result = VirtualBox.run_command ['VBoxManage', '--nologo', 'list',
+                                     '--long', 'hostifs']
+    if result.status != 0
+      raise 'Unexpected error code returned by VirtualBox'
+    end
+    
+    result.output.split("\n\n").map do |nic_info|
+      i = Hash[nic_info.split("\n").map { |line|
+        line.split(':', 2).map(&:strip)
+      }]
+      {
+        :id => i['Name'], :ip => i['IPAddress'], :mask => i['NetworkMask'],
+        :mac => i['HardwareAddress'].upcase.gsub(/[^0-9A-F]/, '')
+      }
+    end
   end
 end  # class VirtualBox::Nic
 
