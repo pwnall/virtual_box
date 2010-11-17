@@ -1,0 +1,39 @@
+GEM
+  remote: http://rubygems.org/
+  specs:
+    diff-lcs (1.1.2)
+    git (1.2.5)
+    hashie (0.4.0)
+    jeweler (1.5.0.pre5)
+      bundler (~> 1.0.0)
+      git (>= 1.2.5)
+      rake
+    macaddr (1.0.0)
+    rake (0.8.7)
+    rcov (0.9.9)
+    rspec (2.0.1)
+      rspec-core (~> 2.0.1)
+      rspec-expectations (~> 2.0.1)
+      rspec-mocks (~> 2.0.1)
+    rspec-core (2.0.1)
+    rspec-expectations (2.0.1)
+      diff-lcs (>= 1.1.2)
+    rspec-mocks (2.0.1)
+      rspec-core (~> 2.0.1)
+      rspec-expectations (~> 2.0.1)
+    uuid (2.3.1)
+      macaddr (~> 1.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  bundler (~> 1.0.0)
+  hashie (>= 0.4.0)
+  jeweler (~> 1.5.0.pre5)
+  rcov
+  rspec (~> 2.0.0)
+  uuid (>= 2.3.1)
+
+METADATA
+  version: 1.0.6

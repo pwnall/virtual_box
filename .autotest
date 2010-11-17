@@ -1,0 +1,9 @@
+Autotest.add_hook :initialize do |autotest|
+  autotest.add_exception '.git'
+  autotest.add_mapping %r{lib/virtual_box/.*\.rb$} do |file, match|
+    p match
+    autotest.files_matching %r{spec/.*_spec\.rb$}
+  end
+  p autotest.mappings
+  false
+end
