@@ -1,19 +1,21 @@
+require File.expand_path('../helper.rb', File.dirname(__FILE__))
+
 describe 'Machine' do 
   describe 'os_types' do
     before do
       @types = VirtualBox::Machine.os_types
     end
     it 'should map linux 2.6' do
-      @types.should include(:linux26)
+      @types.must_include :linux26
     end
     
     it 'should include linux 2.6 ID' do
-      @types.should include('linux26')
-      @types.should include('Linux26')
+      @types.must_include 'linux26'
+      @types.must_include 'Linux26'
     end
 
     it 'should include linux 2.6 description' do
-      @types.should include('Linux 2.6')
+      @types.must_include 'Linux 2.6'
     end
   end
   
@@ -33,7 +35,7 @@ describe 'Machine' do
       vm = VirtualBox::Vm.new :uid => @vm.uid
       
       vm.pull_config
-      vm.specs.to_hash.should == @vm.specs.to_hash
+      vm.specs.to_hash.must_equal @vm.specs.to_hash
     end
   end
 end

@@ -53,7 +53,7 @@ class Nic
   undef :chip
   # :nodoc: defined as accessor
   def chip
-    @chip ||= :amd
+    @chip ||= (:mode == :virtual) ? :virtual : :amd
   end
   
   undef :mac
@@ -153,7 +153,7 @@ class Nic
     when 'virtio'
       :virtual
     else
-      :amd
+      (self.mode == :virtual) ? :virtual : :amd
     end
     
     self.mac = params["macaddress#{nic_id}"]

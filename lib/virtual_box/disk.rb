@@ -149,7 +149,7 @@ class Disk
     if result.status != 0
       raise 'Unexpected error code returned by VirtualBox'
     end
-    uid_match = result.output.match /UUID: (.*)$/
+    uid_match = /UUID: (.*)$/.match result.output
     unless uid_match
       raise 'VirtualBox output does not include disk UUID'
     end

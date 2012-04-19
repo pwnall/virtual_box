@@ -1,3 +1,5 @@
+require File.expand_path('../helper.rb', File.dirname(__FILE__))
+
 describe 'VM' do 
   describe 'anonymous' do
     before do
@@ -5,15 +7,15 @@ describe 'VM' do
     end
     
     it 'should receive a name' do
-      @vm.name.should_not be_nil
+      @vm.name.wont_be_nil
     end
     
     it 'should receive an UID' do
-      @vm.uid.should_not be_nil
+      @vm.uid.wont_be_nil
     end
     
     it 'should be unregistered' do
-      @vm.should_not be_registered
+      @vm.wont_be :registered?
     end
     
     describe 'registered' do
@@ -26,12 +28,12 @@ describe 'VM' do
       end
       
       it 'should know it is registered' do
-        @vm.should be_registered
+        @vm.must_be :registered?
       end
       
       it 'should show up on the list of registered VM UIDs' do
         uids = VirtualBox::Vm.registered_uids
-        uids.should include(@vm.uid)
+        uids.must_include @vm.uid
       end
       
       describe 'started' do
@@ -45,7 +47,7 @@ describe 'VM' do
         
         it 'should show up on the list of started VM UIDs' do
           uids = VirtualBox::Vm.started_uids
-          uids.should include(@vm.uid)
+          uids.must_include @vm.uid
         end
       end
     end
