@@ -1,23 +1,35 @@
 # Manage the VM lifecycle.
 
-# :nodoc: namespace
 module VirtualBox
-
 
 # VirtualBox virtual machine.
 class Vm
   # The UUID that the VM is registered with in VirtualBox.
   attr_accessor :uid
   
-  # Name for the VM.
+  # [String] Name for the VM.
   attr_accessor :name
   
-  # General VM configuration (Machine instance).
+  # [VirtualBox::Machine] General VM configuration.
   attr_accessor :specs
   
-  # Network interfaces.
+  # [Array<VirtualBox::Nic>] Network interfaces.
   attr_accessor :nics
   private :nics=
+  
+  # [Array<VirtualBox::IoBus>] IO controllers connecting disks to the VM.
+  attr_accessor :io_buses
+  undef :io_buses=
+  # :nodoc: defined as accessor
+  def io_buses=(new_io_buses)
+    @io_buses = new_io_buses.map do |io_bus|
+      if io_bus.kind_of? VirtualBox::IoBus
+        io_bus
+      else
+        VirtualBox::IoBus.new io_bus
+      end
+    end
+  end
   
   # If true, the VM's screen will be displayed in a GUI.
   #
@@ -45,17 +57,24 @@ class Vm
   # Creates a VM based on the given attributes.
   #
   # This does not register the VM with VirtualBox.
+  #
+  # @return [Vm] self, for easy call chaining
   def initialize(options = {})
     self.nics = Array.new(8) { VirtualBox::Nic.new :mode => :none }
+    self.io_buses = []
     options.each { |k, v| self.send :"#{k}=", v }
   end
   
   # True if this VM has been registered with VirtualBox.
+  #
+  # @return [Boolean] true for VMs that are already registered with VirtualBox
   def registered?
     self.class.registered_uids.include? uid
   end
   
   # Registers this VM with VirtualBox.
+  #
+  # @return [Vm] self, for easy metod chaining
   def register
     unregister if registered?
     
@@ -71,6 +90,8 @@ class Vm
   end
   
   # De-registers this VM from VirtualBox's database.
+  #
+  # @return [Vm] self, for easy metod chaining
   def unregister
     VirtualBox.run_command ['VBoxManage', 'unregistervm', uid, '--delete']
     self
@@ -122,8 +143,9 @@ class Vm
   
   # Creates the virtual machine configuration in VirtualBox.
   #
-  # Args:
-  #   config_path:: path to the VM configuration file that will be created
+  # @param [String] config_path path to the VM configuration file that will be
+  #                             created
+  # @return [VirtualBox::Vm] self, for easy call chaining
   def create_configuration(config_path = nil)
     raise 'Cannot create a configuration without a VM name' unless name
     
@@ -146,10 +168,12 @@ class Vm
     end
     self.config_file = config_match[1]
     
-    true
+    self
   end
   
-  # All machines registered with VirtualBox.
+  # The UUIDs of all VMs that are registered with VirtualBox.
+  #
+  # @return [Array<String>] UUIDs for VMs that VirtualBox is aware of
   def self.registered_uids
     result = VirtualBox.run_command ['VBoxManage', '--nologo', 'list', 'vms']
     if result.status != 0
@@ -161,7 +185,9 @@ class Vm
     end
   end
 
-  # All machines that are started in VirtualBox.
+  # The UUIDs of all VirtualBox VMs that are started.
+  #
+  # @return [Array<String>] UUIDs for VMs that are running in VirtualBox
   def self.started_uids
     result = VirtualBox.run_command ['VBoxManage', '--nologo', 'list',
                                      'runningvms']
@@ -174,18 +200,27 @@ class Vm
     end
   end
   
-  # Updates the configuration in VirtualBox to reflect this VM's configuration. 
+  # Updates the configuration in VirtualBox to reflect this VM's configuration.
+  #
+  # @return [VirtualBox::Vm] self, for easy call chaining
   def push_config
     command = ['VBoxManage', 'modifyvm', uid]
-    command.push *specs.to_params
-    nics.each_with_index { |nic, index| command.push *nic.to_params(index + 1) }
+    command.concat specs.to_params
+    nics.each_with_index do |nic, index|
+      command.concat nic.to_params(index + 1)
+    end
     if VirtualBox.run_command(command).status != 0
       raise 'Unexpected error code returned by VirtualBox'
     end
+    
+    io_buses.each { |bus| bus.add_to self }
+     
     self
   end
   
   # Updates this VM's configuration to reflect the VirtualBox configuration.
+  #
+  # @return [VirtualBox::Vm] self, for easy call chaining
   def pull_config
     result = VirtualBox.run_command ['VBoxManage', '--nologo', 'showvminfo',
                                      '--machinereadable', uid]
@@ -193,23 +228,42 @@ class Vm
       raise 'Unexpected error code returned by VirtualBox'
     end
     
-    config = Hash[result.output.split("\n").map { |line|
-      key, value = *line.split('=', 2)
-      value = value[1...-1] if value[0] == ?"  # Remove string quotes ("").
-      [key, value]
-    }]
+    config = self.class.parse_machine_readable result.output
     
     self.name = config['name']
     self.uid = config['UUID']
     specs.from_params config
     
     nic_count = config.keys.select { |key| /^nic\d+$/ =~ key }.max[3..-1].to_i
-    1.upto(nic_count) do |index|
+    1.upto nic_count do |index|
       nics[index - 1] ||= VirtualBox::Nic.new
       nics[index - 1].from_params config, index
     end
+
+    bus_count = 1 + (config.keys.select { |key|
+      /^storagecontrollername\d+$/ =~ key
+    }.max || "storagecontrollername-1")[21..-1].to_i
+    0.upto bus_count - 1 do |index|
+      io_buses[index] ||= VirtualBox::IoBus.new
+      io_buses[index].from_params config, index
+    end
     
     self
+  end
+  
+  # Parses the output of the 'VBoxManage showvminfo --machinereadable' command.
+  #
+  # @param [String] the command output
+  # @return [Hash<String, Object>] a Hash whose keys are the strings on the left
+  #     side of "=" on each line, and whose values are the strings on the right
+  #     side
+  def self.parse_machine_readable(output)
+    Hash[output.split("\n").map { |line|
+      key, value = *line.split('=', 2)
+      key = key[1...-1] if key[0] == ?"  # Remove string quotes ("").
+      value = value[1...-1] if value[0] == ?"  # Remove string quotes ("").
+      [key, value]
+    }]    
   end
 end  # class VirtualBox::Vm
 

@@ -1,11 +1,6 @@
-# Run code via the command-line interface.
+# Manage the images backing HDDs and DVDs attached to VMs.
 
-require 'English'
-require 'shellwords'
-
-# :nodoc: namespace
 module VirtualBox
-
 
 # Descriptor for a VirtualBox hard-disk or DVD image.
 class Disk
@@ -59,26 +54,12 @@ class Disk
     false
   end
   
-  # Registers this disk with VirtualBox.
-  def register
-    unregister if registered?
-    
-    if media == :dvd
-      command = ['VBoxManage', 'openmedium', media.to_s, '--uuid', uid]
-    else
-      command = ['VBoxManage', 'openmedium', media.to_s, file,
-                 '--type', 'normal', '--uuid', uid]
-    end
-    result = VirtualBox.run_command command
-    if result.status != 0
-      raise 'Unexpected error code returned by VirtualBox'
-    end
-    self
-  end
-  
   # De-registers this disk from VirtualBox's database.
   def unregister
-    VirtualBox.run_command ['VBoxManage', 'closemedium', media.to_s, file]
+    if registered?
+      VirtualBox.run_command ['VBoxManage', 'closemedium', media.to_s, file]
+      self.registerd = false
+    end
     self
   end
   

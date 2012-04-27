@@ -1,8 +1,6 @@
 # Configure a VM's general resources and settings.
 
-# :nodoc: namespace
 module VirtualBox
-
 
 # Configuration for a virtual machine.
 class Machine

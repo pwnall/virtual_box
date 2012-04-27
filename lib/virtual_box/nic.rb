@@ -1,8 +1,6 @@
 # Configure a VM's general resources and settings.
 
-# :nodoc: namespace
 module VirtualBox
-
 
 # Configuration for a network card.
 class Nic
@@ -67,15 +65,18 @@ class Nic
     @mac = new_mac && new_mac.upcase.gsub(/[^0-9A-F]/, '')
   end
   
-  # Creates a NIC with the given attributes
+  # Creates a NIC with the given attributes.
+  #
+  # @param Hash<Symbol, Object> options ActiveRecord-style initial values for
+  #     attributes; can be used together with Nic#to_hash to save and restore
   def initialize(options = {})
     options.each { |k, v| self.send :"#{k}=", v }
   end  
    
   # Arguments to "VBoxManage modifyvm" describing the NIC.
   #
-  # Args:
-  #   nic_id:: the number of the card (1-4) connected to the host
+  # @param [Number] nic_id the number of the card (1-4) connected to the host
+  # @return [Array<String>]
   def to_params(nic_id)
     params = []
         
@@ -121,6 +122,10 @@ class Nic
   end
   
   # Parses "VBoxManage showvminfo --machinereadable" output into this instance.
+  #
+  # @param [Hash<String, String>] output parsed by Vm.parse_machine_readble
+  # @param [Integer] nic_id the NIC's number in the VM
+  # @return [VirtualBox::Nic] self, for easy call chaining
   def from_params(params, nic_id)
     case params["nic#{nic_id}"]
     when 'nat'
@@ -166,7 +171,10 @@ class Nic
     self
   end
   
-  # Hash capturing this configuration. Can be passed to Machine#new.
+  # Hash capturing this specification. Can be passed to Nic#new.
+  #
+  # @return Hash<Symbol, Object> programmer-friendly Hash that can be used to
+  #                              restore the Nic spec on another machine
   def to_hash
     { :mode => mode, :chip => chip, :net_id => net_id, :mac => mac,
       :trace_file => trace_file }

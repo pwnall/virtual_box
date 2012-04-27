@@ -1,6 +1,5 @@
 # VirtualBox version detection. 
 
-# :nodoc: namespace
 module VirtualBox
   @version_info = nil
   

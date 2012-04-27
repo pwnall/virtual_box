@@ -1,8 +1,6 @@
-# Configure VirtualBox's DHCP server for virtual networks.
+# Configures VirtualBox's DHCP server for virtual networks.
 
-# :nodoc: namespace
 module VirtualBox
-
 
 # Descriptor for a VirtualBox DHCP server rule.
 class Dhcp
@@ -63,6 +61,8 @@ class Dhcp
   end
   
   # Registers this disk with VirtualBox.
+  #
+  # @return [VirtualBox::Dhcp] self, for easy call chaining
   def register
     unregister if registered?
     
@@ -76,13 +76,17 @@ class Dhcp
   end
   
   # De-registers this disk from VirtualBox's database.
+  #
+  # @return [VirtualBox::Dhcp] self, for easy call chaining
   def unregister
     VirtualBox.run_command ['VBoxManage', 'dhcpserver', 'remove',
                             '--netname', name]
     self
   end
   
-  # Array of all the DHCP rules registered with VirtualBox.
+  # All the DHCP rules registered with VirtualBox.
+  #
+  # @return [Array<VirtualBox::Dhcp the DHCP rules registered with VirtualBox
   def self.registered
     result = VirtualBox.run_command ['VBoxManage', '--nologo', 'list',
                                      '--long', 'dhcpservers']
@@ -95,8 +99,9 @@ class Dhcp
   
   # Parses information about a DHCP rule returned by VirtualBox.
   #
-  # Args:
-  #   disk_info:: output from VBoxManage list --long dhcpservers for one rule
+  # @param [String] disk_info output from "VBoxManage list --long dhcpservers"
+  #                           for one rule
+  # @return [VirtualBox::Dhcp] self, for easy call chaining
   def self.parse_dhcp_info(dhcp_info)
     i = Hash[dhcp_info.split("\n").map { |line| line.split(':').map(&:strip) }]
     
@@ -111,11 +116,17 @@ class Dhcp
   end
   
   # Converts an IP number into a string.
+  #
+  # @param [Integer] ip_number a 32-bit big-endian number holding an IP address
+  # @return [String] the IP address, encoded using the dot (.) notation
   def self.ip_btos(ip_number)
     [ip_number].pack('N').unpack('C*').join('.')
   end
   
   # Converts an IP string into a number.
+  #
+  # @param [String] ip_string an IP address using the dot (.) notation
+  # @return [Integer] the IP adddres, encoded as a 32-bit big-endian number
   def self.ip_stob(ip_string)
     ip_string.split('.').map(&:to_i).pack('C*').unpack('N').first
   end

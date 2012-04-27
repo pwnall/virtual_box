@@ -3,18 +3,15 @@
 require 'English'
 require 'shellwords'
 
-# :nodoc: namespace
 module VirtualBox
 
 # Runs a command in a sub-shell, waiting until the command completes.
 #
-# Args:
-#   args:: an array containing the name and arguments for the command to be ran
+# @param [Array<String>] args the name and arguments for the command to be run
 #
-# Returns:
-#   a hash with the following keys / methods:
-#       :status:: the command's exit status
-#       :output:: a string with the command's output 
+# @return [Hashie::Mash<Symbol, String>] hash with the following keys / methods:
+#     :status:: the command's exit status
+#     :output:: a string with the command's output
 def self.run_command(args)
   output = Kernel.`(Shellwords.shelljoin(args))
   Hashie::Mash.new :status => $CHILD_STATUS.exitstatus, :output => output
