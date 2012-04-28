@@ -4,119 +4,85 @@ module VirtualBox
 
 # Descriptor for a VirtualBox hard-disk or DVD image.
 class Disk
-  # Path to the file storing the disk image.
+  # Path to the file storing this disk image.
+  #
+  # @return [String]
   attr_accessor :file
   
-  # The disk image format. Can be :raw, :vdi, :vmdk, or :vhd.
+  # The format of this disk image.
+  #
+  # The recognized formats are :raw, :vdi, :vmdk, and :vhd.
+  # @return [Symbol]
   attr_accessor :format
   
-  # The type of media that the image represents. Can be :disk or :dvd
+  # The type of media that the image represents.
+  #
+  # The recognized types are :disk and :dvd.
+  # @return [Symbol]
   attr_accessor :media
   
-  # The UUID that the image is registered with in VirtualBox.
-  attr_accessor :uid
-  
   undef :format
-  # :nodoc: documented as accessor
   def format
     @format ||= self.class.guess_image_format file
   end
 
   undef :media
-  # :nodoc: documented as accessor
   def media
     @media ||= self.class.guess_media_type file
   end
   
-  undef :uid
-  # :nodoc: documented as accessor
-  def uid
-    @uid ||= UUID.generate
-  end
-  
-  # Creates a new image descriptor based on the given attributes.
+  # Creates an image descriptor with the given attributes.
   #
-  # This does not create a file, or register a disk image with VirtualBox.
+  # @param Hash<Symbol, Object> options ActiveRecord-style initial values for
+  #     attributes; can be used together with Disk#to_hash to save and restore
   def initialize(options)
     options.each { |k, v| self.send :"#{k}=", v }
     self.file = File.expand_path file
   end
 
-  # True if this disk image has been registered with VirtualBox.
-  def registered?
-    images = (media == :dvd) ? self.class.registered_dvds :
-                               self.class.registered_hdds
-    image = images.find { |image| image.file == file }
-    if image
-      self.uid = image.uid
-      return true
+  # Attaches this disk to a virtual machine.
+  #
+  # @param [VirtualBox::Vm] the VM that this image will be attached to
+  # @param [VirtualBox::IoBus] the IO controller this disk will be attached to
+  # @param [Integer] port the IO bus port this disk will be connected to
+  # @param [Integer] port number indicating the device's ordering on its port
+  # @return [VirtualBox::Disk] self, for easy call chaining
+  def add_to(vm, io_bus, port, device)
+    media_arg = case media
+    when :disk
+      'hdd'
+    when :dvd
+      'dvddrive'
     end
-    false
-  end
-  
-  # De-registers this disk from VirtualBox's database.
-  def unregister
-    if registered?
-      VirtualBox.run_command ['VBoxManage', 'closemedium', media.to_s, file]
-      self.registerd = false
+    result = VirtualBox.run_command ['VBoxManage', '--nologo', 'storageattach',
+        vm.uid, '--storagectl', io_bus.name, '--port', port.to_s,
+        '--device', device.to_s, '--type', media_arg, '--medium', file,
+        '--mtype', 'normal']
+    if result.status != 0
+      raise 'Unexpected error code returned by VirtualBox'
     end
     self
   end
   
-  # Returns an array of Disk instances for the registered images.
-  def self.registered
-    registered_hdds + registered_dvds
-  end
-  
-  # Array of disk images corresponding to the HDDs registered with VirtualBox.
-  def self.registered_hdds
-    result = VirtualBox.run_command ['VBoxManage', '--nologo', 'list',
-                                     '--long', 'hdds']
-    if result.status != 0
-      raise 'Unexpected error code returned by VirtualBox'
-    end
-    result.output.split("\n\n").
-                  map { |disk_info| parse_disk_info disk_info, :disk }
-  end
-  
-  # Array of disk images corresponding to the DVDs registered with VirtualBox.
-  def self.registered_dvds
-    result = VirtualBox.run_command ['VBoxManage', '--nologo', 'list',
-                                     '--long', 'hdds']
-    if result.status != 0
-      raise 'Unexpected error code returned by VirtualBox'
-    end
-    dvds = result.output.split("\n\n").
-                  map { |disk_info| parse_disk_info disk_info, :dvd }
-  end
-
-  # Parses information about a disk returned by the VirtualBox manager.
+  # Creates a new image descriptor based on the given attributes.
   #
-  # Args:
-  #   disk_info:: output from VBoxManage list --long hdds for one disk
-  #   media:: :hdd or :dvd
-  def self.parse_disk_info(disk_info, media)
-    i = Hash[disk_info.split("\n").map { |line| line.split(':').map(&:strip) }]
-    
-    format = i['Format'].downcase.to_sym
-    path = i['Location']
-    type = i['Type']
-    uid = i['UUID']
-    parent_uid = i['Parent UUID']
-    parent_uid = nil if parent_uid == 'base'
-    
-    new :file => path, :uid => uid, :format => format, :media => media
+  # @param Hash<Symbol, Object> options ActiveRecord-style initial values for
+  #     attributes; can be used together with Disk#to_hash to save and restore
+  def to_hash
+    { :file => file, :format => format, :media => media }
   end
   
   # Creates a VirtualBox disk image.
   #
-  # The options hash takes the following keys:
-  #   file:: the path to the file that will contain the disk image
-  #   size:: the image size, in bytes
-  #   format:: image format (can also be auto-detected by the file extension)
-  #   prealloc:: if false, the image file grows as blocks are used
+  # @param [Hash] options one or many of the options documented below
+  # @option options [String] file path to the file that will hold the disk image
+  # @option options [Integer] size the image size, in bytes
+  # @option options [Symbol] format the image format; if not provided, an
+  #     intelligent guess is made, based on the file extension
+  # @option options [Boolean] prealloc unless explicitly set to true, the image
+  #     file will grow in size as the disk's blocks are used
   #
-  # Returns a Disk instance describing the image that was created.
+  # @return [VirtualBox::Disk] a Disk describing the image that was created
   def self.create(options)
     path = options[:file]
     format = options[:format] || guess_image_format(path)
@@ -130,13 +96,8 @@ class Disk
     if result.status != 0
       raise 'Unexpected error code returned by VirtualBox'
     end
-    uid_match = /UUID: (.*)$/.match result.output
-    unless uid_match
-      raise 'VirtualBox output does not include disk UUID'
-    end
     
-    Disk.new :file => path, :format => format, :media => :disk,
-             :uid => uid_match[1]
+    Disk.new :file => path, :format => format, :media => :disk
   end
   
   # Disk image format based on the extension in the file name.

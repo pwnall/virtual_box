@@ -30,7 +30,7 @@ describe 'IoBus' do
   end
 
   describe 'VM with all bunch of buses' do
-    before do            
+    before do
       @vm = VirtualBox::Vm.new :io_buses => [
         { :bus => :ide, :name => 'Weird Name', :chip => :piix3 },
         { :bus => :sata },

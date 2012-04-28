@@ -173,8 +173,8 @@ class Nic
   
   # Hash capturing this specification. Can be passed to Nic#new.
   #
-  # @return Hash<Symbol, Object> programmer-friendly Hash that can be used to
-  #                              restore the Nic spec on another machine
+  # @return [Hash<Symbol, Object>] Ruby-friendly Hash that can be used to
+  #                                re-create this NIC specification
   def to_hash
     { :mode => mode, :chip => chip, :net_id => net_id, :mac => mac,
       :trace_file => trace_file }

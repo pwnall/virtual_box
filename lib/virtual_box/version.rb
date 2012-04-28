@@ -16,12 +16,12 @@ module VirtualBox
   
   # Version information about the VirtualBox package installed on this machine.
   #
-  # Returns:
-  #   false if VirtualBox is not installed; otherwise, a hash with the keys:
-  #       svn:: (number) the SVN revision that VirtualBox is built off of
-  #       edition:: the VirtualBox edition ('' for the personal edition, 'OSE'
-  #                 for the open-source edition)
-  #       release:: the public release number (e.g. '3.0.4')
+  # @return [Hash<Symbol, Object>, Boolean] false if VirtualBox is not
+  #     installed; otherwise, a hash with the following keys:
+  #     :svn:: (number) the SVN revision that VirtualBox is built off of
+  #     :edition:: the VirtualBox edition ('' for the personal edition, 'OSE'
+  #                for the open-source edition)
+  #     :release:: the public release number (e.g. '3.0.4')
   def self.version
     return @version_info unless @version_info.nil?
     
@@ -52,6 +52,7 @@ module VirtualBox
   end
   
   # Removes the cached information on the VirtualBox package version.
+  # @return <NilObject> nil
   def self.reset_version_info!
     @version_info = nil
   end

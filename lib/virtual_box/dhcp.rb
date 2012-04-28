@@ -4,42 +4,43 @@ module VirtualBox
 
 # Descriptor for a VirtualBox DHCP server rule.
 class Dhcp
-  # Name for the VirtualBox internal network.
+  # The name of the VirtualBox internal network served by this DHCP server.
+  # @return [String]
   attr_accessor :name
   
-  # IP address of the DHCP server.
+  # The DHCP server's IP address.
+  # @return [String]
   attr_accessor :ip
   
-  # Network mask reported by the DHCP server.
+  # The network mask reported by the DHCP server.
+  # @return [String]
   attr_accessor :netmask
   
-  # First IP address in the DHCP server address pool.
+  # The first IP address in the DHCP server address pool.
+  # @return [String]
   attr_accessor :start_ip
 
-  # Last IP address in the DHCP server address pool.
+  # The last IP address in the DHCP server address pool.
+  # @return [String]
   attr_accessor :end_ip
 
   undef :ip
-  # :nodoc: defined as accessor
   def ip
     @ip ||= self.class.ip_btos((self.class.ip_stob(start_ip) &
                                 self.class.ip_stob(netmask)) + 1)
   end
 
   undef :netmask
-  # :nodoc: defined as accessor
   def netmask
     @netmask ||= '255.255.255.0'
   end
 
   undef :start_ip
-  # :nodoc: defined as accessor
   def start_ip
     @start_ip ||= self.class.ip_btos(self.class.ip_stob(ip) + 1)
   end
 
   undef :end_ip
-  # :nodoc: defined as accessor
   def end_ip
     nm = self.class.ip_stob(netmask)
     @end_ip ||= self.class.ip_btos((self.class.ip_stob(start_ip) & nm) +

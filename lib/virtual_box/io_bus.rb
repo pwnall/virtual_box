@@ -4,34 +4,45 @@ module VirtualBox
 
 # IO controller.
 class IoBus
-  # Controller name, unique to a VM.
+  # @return [String] controller name, unique inside a VM
   #
   # VirtualBox uses "IDE Controller" and "SATA Controller" as default names.
   attr_accessor :name
   
-  # The kind of bus used by the controller.
+  # The kind of bus used by this controller.
   #
-  # The following types are recognized: :ide, :sata, :sas, :scsi, :floppy.
+  # The following bus types are recognized: :ide, :sata, :sas, :scsi, :floppy.
+  # @return [Symbol]
   attr_accessor :bus
   
-  # Controller type.
+  # The chipset simulated by the IO controller
   #
-  # The following chipsets are recogniezd. The :piix3, :piix4, and :ich6 IDE
-  # chipsets, the :ahci SATA chipset, the :lsi_logic and :bus_logic SCSI
-  # chipsets, the :lsi_logic_sas SAS chipset, and the :i82078 floppy chipset.
+  # The following chipsets are recogniezd:
+  # IDE :: :piix3, :piix4, and :ich6
+  # SATA :: :ahci (Intel AHCI)
+  # SCSI :: :lsi_logic and :bus_logic
+  # SAS :: lsi_logic_sas
+  # Floppy :: :i82078
+  # @return [Symbol]
   attr_accessor :chip
   
-  # True if the VM BIOS considers this controller as bootable.
+  # True if the VM BIOS considers this controller bootable.
+  # @return [Boolean]
   attr_accessor :bootable
   
-  # True if the I/O for this controller should bypass the host OS cache.
+  # True if the controller's I/O bypasses the host OS cache.
+  # @return [Boolean]
   attr_accessor :no_cache
   
-  # Maximum number of I/O devices that can be attached to this controller's bus.
+  # The maximum number of I/O devices supported by this controller.
+  # @return [Integer]
   attr_accessor :max_ports
   
+  # The disks connected to this controller's bus.
+  # @return [Hash<Array<Integer>, VirtualBox::Disk>]
+  attr_accessor :disks
+  
   undef :name
-  # :nodoc: defined as accessor
   def name
     @name ||= case bus
     when :ide, :sata, :scsi, :sas
@@ -42,19 +53,16 @@ class IoBus
   end 
   
   undef :no_cache
-  # :nodoc: defined as accessor
   def no_cache
     @no_cache.nil? ? false : @bootable
   end
 
   undef :bootable
-  # :nodoc: defined as accessor
   def bootable
     @bootable.nil? ? true : @bootable
   end
   
   undef :chip
-  # :nodoc: defined as accessor
   def chip
     @chip ||= case @bus
     when :ide
@@ -71,7 +79,6 @@ class IoBus
   end
   
   undef :bus
-  # :nodoc: defined as accessor
   def bus
     @bus ||= case @chip
     when :piix3, :piix4, :ich6
@@ -88,7 +95,6 @@ class IoBus
   end
   
   undef :max_ports
-  # :nodoc: defined as accessor
   def max_ports
     @max_ports ||= case bus
     when :sata
@@ -102,7 +108,24 @@ class IoBus
     end
   end
   
+  undef :disks=
+  def disks=(new_disks)
+    @disks = {}
+    new_disks.each do |disk|
+      if disk.kind_of? VirtualBox::Disk
+        @disks[[first_free_port, 0]] = disk
+      else
+        options = disk.dup
+        port = options.delete(:port) || first_free_port
+        device = options.delete(:device) || 0
+        @disks[[port, device]] = VirtualBox::Disk.new options
+      end
+    end
+  end
+  
   # Parses "VBoxManage showvminfo --machinereadable" output into this instance.
+  #
+  # @return [VirtualBox::IoBus] self, for easy call chaining
   def from_params(params, bus_id)
     self.name = params["storagecontrollername#{bus_id}"]
     self.bootable = params["storagecontrollerbootable#{bus_id}"] == 'on'
@@ -126,6 +149,16 @@ class IoBus
       self.chip = :i82078
     end
     self.no_cache = nil
+    
+    image_re = /\A#{name}-(\d+)-(\d+)\Z/
+    @disks = {}
+    params.each do |key, value|
+      next unless match = image_re.match(key)
+      next if value == 'none'
+      port, device = match[1].to_i, match[2].to_i
+      @disks[[port, device]] = VirtualBox::Disk.new :file => value
+    end
+    self
   end
   
   # Parameters for "VBoxManage storagectl" to add this IO bus to a VM.
@@ -153,45 +186,74 @@ class IoBus
     params.push '--bootable', (bootable ? 'on' : 'off')
   end
   
-  # Adds this IO bus to a virtual machine.
+
+  # Adds this IO bus and all its disks to a virtual machine.
   #
-  # @param [VirtualBox::Vm] vm the virtual machine that this IO bus will be
-  #                            added to
+  # @param [VirtualBox::Vm] vm the virtual machine that this IO controller will
+  #                            be added to
+  # @return [VirtualBox::IoBus] self, for easy call chaining
   def add_to(vm)
-    command = ['VBoxManage', 'storagectl', vm.uid].concat to_params
-    result = VirtualBox.run_command command
-    if result.status != 0
-      raise 'Unexpected error code returned by VirtualBox'
+    add_bus_to vm
+    disks.each do |port_device, disk|
+      disk.add_to vm, self, port_device.first, port_device.last
     end
+    self
   end
   
   # Removes this IO bus from a virtual machine.
   #
-  # @param [VirtualBox::Vm] vm the virtual machine that this IO bus will be
-  #                            removed from
+  # @param [VirtualBox::Vm] vm the virtual machine that this IO controller will
+  #                            be removed from
+  # @return [VirtualBox::IoBus] self, for easy call chaining
   def remove_from(vm)
-    command = ['VBoxManage', 'storagectl', vm.uuid, '--name', name, '--remove']
+    result = VirtualBox.run_command ['VBoxManage', '--nologo', 'storagectl',
+                                     vm.uuid, '--name', name, '--remove']
+    if result.status != 0
+      raise 'Unexpected error code returned by VirtualBox'
+    end
+    self
+  end
+
+  # Adds this IO bus to a virtual machine.
+  #
+  # @param [VirtualBox::Vm] vm the virtual machine that this IO bus will be
+  #                            added to
+  # @return [VirtualBox::IoBus] self, for easy call chaining
+  def add_bus_to(vm)
+    command = ['VBoxManage', '--nologo', 'storagectl', vm.uid].concat to_params
     result = VirtualBox.run_command command
     if result.status != 0
       raise 'Unexpected error code returned by VirtualBox'
     end
+    self
   end
-
-  # Creates a new image descriptor based on the given attributes.
+  
+  # Creates a new IO controller specification based on the given attributes.
   #
   # @param Hash<Symbol, Object> options ActiveRecord-style initial values for
   #     attributes; can be used together with IoBus#to_hash to save and restore
   def initialize(options = {})
+    @disks = {}
     options.each { |k, v| self.send :"#{k}=", v }
   end
   
   # Hash capturing this specification. Can be passed to IoBus#new.
   #
-  # @return Hash<Symbol, Object> programmer-friendly Hash that can be used to
-  #                              restore the Nic spec on another machine  
+  # @return [Hash<Symbol, Object>] Ruby-friendly Hash that can be used to
+  #                                re-create this IO controller specification
   def to_hash
+    disk_hashes = disks.map do |port_device, disk|
+      disk.to_hash.merge! :port => port_device.first,
+                          :device => port_device.last
+    end
     { :name => name, :bus => bus, :chip => chip, :bootable => bootable,
-      :no_cache => no_cache, :max_ports => max_ports }
+      :no_cache => no_cache, :max_ports => max_ports, :disks => disk_hashes }
+  end
+
+  # Finds an unused port on this IO controller's bus.
+  # @return [Integer] a port number that a new disk can be attached to
+  def first_free_port
+    disks.empty? ? 0 : disks.keys.min.first + 1
   end
 end  # class VirtualBox::IoBus
 

@@ -74,31 +74,41 @@ describe 'Disk' do
       it 'should return a VDI Disk' do
         @disk.format.must_equal :vdi
       end
-      
-      it 'should return an unregistered disk' do
-        @disk.wont_be :registered?
+    end
+  end
+  
+  describe 'VM with a bunch of disks' do
+    let(:disk1_file) { '/tmp/disk1.vdi' }
+    let(:disk2_file) { '/tmp/disk2.vdi' }
+    let(:disk3_file) { '/tmp/disk3.vdi' }
+    before do
+      [disk1_file, disk2_file, disk3_file].each do |file|
+        File.unlink file if File.exist?(file)
+        VirtualBox::Disk.create :file => file, :size => 16 * 1024 * 1024
       end
-      
-      describe 'registered' do
-        before do
-          @disk.register
-
-          images = VirtualBox::Disk.registered
-          @image = images.find { |image| image.file == @disk.file }
-        end
-        
-        after do
-          @disk.unregister
-        end
-        
-        it 'should be among disk instances' do
-          @image.wont_be_nil
-        end
-        
-        it 'should be registered' do
-          @disk.wont_be :registered?
-        end
+    
+      @vm = VirtualBox::Vm.new :io_buses => [
+        { :bus => :sata, :disks => [
+            { :file => disk1_file, :port => 0, :device => 0 },
+            { :file => disk2_file }
+          ]},
+        { :bus => :ide, :disks => [{ :file => disk3_file }] }
+      ]
+      @vm.register
+    end
+    
+    after do
+      @vm.unregister
+      [disk1_file, disk2_file, disk3_file].each do |file|
+        File.unlink file if File.exist?(file)
       end
+    end
+    
+    it 'should push/pull specs correctly' do
+      vm = VirtualBox::Vm.new :uid => @vm.uid
+      vm.pull_config
+      vm.io_buses.map { |io_bus| io_bus.to_hash }.
+                  must_equal @vm.io_buses.map { |io_bus| io_bus.to_hash }
     end
   end
 end
