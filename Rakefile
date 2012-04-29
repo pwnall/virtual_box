@@ -32,6 +32,9 @@ Rake::TestTask.new(:test) do |test|
   test.verbose = true
 end
 
+load './test/tasks/tinycore.rake'
+
+task :test => :fixtures
 task :default => :test
 
 require 'yard'
