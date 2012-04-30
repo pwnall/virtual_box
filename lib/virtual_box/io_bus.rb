@@ -2,11 +2,13 @@
 
 module VirtualBox
 
-# IO controller.
+# Specification for a IO controller attached to a virtual machine.
 class IoBus
-  # @return [String] controller name, unique inside a VM
+  # A user-friendly name for the I/O controller.
   #
+  # I/O controller names must be unique within the scope of a virtual machine.
   # VirtualBox uses "IDE Controller" and "SATA Controller" as default names.
+  # @return [String]
   attr_accessor :name
   
   # The kind of bus used by this controller.
@@ -121,6 +123,7 @@ class IoBus
         @disks[[port, device]] = VirtualBox::Disk.new options
       end
     end
+    new_disks
   end
   
   # Parses "VBoxManage showvminfo --machinereadable" output into this instance.

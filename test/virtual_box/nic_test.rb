@@ -23,12 +23,12 @@ describe 'Nic' do
   
   describe 'NAT card and virtual card' do
     before do            
-      @vm = VirtualBox::Vm.new
-      @vm.nics[0] = VirtualBox::Nic.new :mode => :bridged, :chip => :amd,
-           :net_id => VirtualBox::Nic.host_nics.first[:id],
-           :mac => 'aabbccddeeff'
-      @vm.nics[2] = VirtualBox::Nic.new :mode => :virtual, :chip => :virtual,
-           :net_id => 'rbx00'
+      @vm = VirtualBox::Vm.new :nics => [
+        { :mode => :bridged, :chip => :amd,
+          :net_id => VirtualBox::Nic.host_nics.first[:id],
+          :mac => 'aabbccddeeff' },
+        { :port => 2, :mode => :virtual, :chip => :virtual, :net_id => 'rbx00' }
+      ]
       @vm.register
     end
     
@@ -36,11 +36,14 @@ describe 'Nic' do
       @vm.unregister
     end
     
+    it 'should skip NIC 1' do
+      @vm.nics[1].must_be_nil
+    end
+    
     it 'should push/pull specs correctly' do
       vm = VirtualBox::Vm.new :uid => @vm.uid
       vm.pull_config
-      vm.nics.map { |nic| nic.to_hash }.
-              must_equal @vm.nics.map { |nic| nic.to_hash }
+      vm.to_hash[:nics].must_equal @vm.to_hash[:nics]
     end
   end
 end

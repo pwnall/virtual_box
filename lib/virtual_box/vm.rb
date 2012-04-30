@@ -4,26 +4,64 @@ module VirtualBox
 
 # VirtualBox virtual machine.
 class Vm
-  # The UUID that the VM is registered with in VirtualBox.
+  # The UUID used to register this virtual machine with VirtualBox.
+  #
+  # The UUID is used to identify the VM in many VirtualBox commands. It should
+  # not be changed once the VM is registered. In fact, the UUID should not
+  # be manually assigned under normal use.
+  # @return [String]
   attr_accessor :uid
   
-  # [String] Name for the VM.
+  # A user-friendly name for this virtual machine.
+  #
+  # If not assigned, a unique name will be generated based on the VM's UUID.
+  #
+  # @return [String]
   attr_accessor :name
   
-  # [VirtualBox::Machine] General VM configuration.
-  attr_accessor :specs
+  # The general VM configuration.
+  # @return [VirtualBox::Board]
+  attr_accessor :board
   
-  # [Array<VirtualBox::Nic>] Network interfaces.
-  attr_accessor :nics
-  private :nics=
-  
-  # [Array<VirtualBox::IoBus>] IO controllers connecting disks to the VM.
+  # The IO controllers (and disks) connected to the VM.
+  # @return [Array<VirtualBox::IoBus>]
   attr_accessor :io_buses
+  
+  # The network cards connected to this virtual machine.
+  # @return [Array<VirtualBox::Nic>]
+  attr_accessor :nics
+  
+  # If true, the VM's screen will be displayed in a GUI.
+  #
+  # This is only intended for manual testing. Many continuous integration
+  # servers cannot display the VirtualBox GUI, so this attribute should not be
+  # set to true in test suites.
+  # @return [Boolean]
+  attr_accessor :gui
+    
+  undef :uid
+  def uid
+    @uid ||= UUID.generate
+  end
+  
+  undef :name
+  def name
+    @name ||= 'rbx_' + uid.gsub('-', '')
+  end
+  
+  undef :board=
+  def board=(new_board)
+    @board = if new_board.kind_of?(VirtualBox::Board)
+      new_board
+    else
+      VirtualBox::Board.new new_board
+    end
+  end
+
   undef :io_buses=
-  # :nodoc: defined as accessor
   def io_buses=(new_io_buses)
     @io_buses = new_io_buses.map do |io_bus|
-      if io_bus.kind_of? VirtualBox::IoBus
+      if io_bus.kind_of?(VirtualBox::IoBus)
         io_bus
       else
         VirtualBox::IoBus.new io_bus
@@ -31,38 +69,45 @@ class Vm
     end
   end
   
-  # If true, the VM's screen will be displayed in a GUI.
-  #
-  # This is only intended for manual testing.
-  attr_accessor :gui
-    
-  undef :uid
-  # :nodoc: documented as accessor
-  def uid
-    @uid ||= UUID.generate
+  undef :nics=
+  def nics=(new_nics)
+    @nics = []
+    new_nics.each do |nic|
+      if nic.kind_of?(VirtualBox::Nic) || nic.nil?
+        @nics << nic
+      else
+        options = nic.dup
+        port = options.delete(:port) || @nics.length
+        @nics[port] = VirtualBox::Nic.new options
+      end
+    end
+    new_nics
   end
   
-  undef :name
-  # :nodoc: documented as accessor
-  def name
-    @name ||= 'rbx_' + uid.gsub('-', '')
-  end
-  
-  undef :specs
-  # :nodoc: documented as accessor
-  def specs
-    @specs ||= Machine.new
-  end
-  
-  # Creates a VM based on the given attributes.
+  # Creates a new virtual machine specification based on the given attributes.
   #
-  # This does not register the VM with VirtualBox.
-  #
-  # @return [Vm] self, for easy call chaining
+  # @param Hash<Symbol, Object> options ActiveRecord-style initial values for
+  #     attributes; can be used together with Vm#to_hash to save and restore
   def initialize(options = {})
-    self.nics = Array.new(8) { VirtualBox::Nic.new :mode => :none }
+    self.board = {}
     self.io_buses = []
+    self.nics = []
+    self.gui = false
     options.each { |k, v| self.send :"#{k}=", v }
+  end
+  
+  # Hash capturing this specification. Can be passed to Vm#new.
+  #
+  # @return [Hash<Symbol, Object>] Ruby-friendly Hash that can be used to
+  #                                re-create this virtual machine specification
+  def to_hash
+    {
+      :name => name, :uid => uid, :gui => gui,
+      :board => board.to_hash, :io_buses => io_buses.map(&:to_hash),
+      :nics => nics.map.
+           with_index { |nic, i| nic && nic.to_hash.merge!(:port => i) }.
+           reject!(&:nil?)
+    }
   end
   
   # True if this VM has been registered with VirtualBox.
@@ -74,7 +119,7 @@ class Vm
   
   # Registers this VM with VirtualBox.
   #
-  # @return [Vm] self, for easy metod chaining
+  # @return [VirtualBox::Vm] self, for easy call chaining
   def register
     unregister if registered?
     
@@ -91,13 +136,15 @@ class Vm
   
   # De-registers this VM from VirtualBox's database.
   #
-  # @return [Vm] self, for easy metod chaining
+  # @return [VirtualBox::Vm] self, for easy call chaining
   def unregister
     VirtualBox.run_command ['VBoxManage', 'unregistervm', uid, '--delete']
     self
   end
   
   # Starts the virtual machine.
+  #
+  # @return [VirtualBox::Vm] self, for easy call chaining
   def start
     register unless registered?
     
@@ -112,6 +159,7 @@ class Vm
   # Stops the virtual machine simulation.
   #
   # This is equivalent to pulling the power cord from a physical machine.
+  # @return [VirtualBox::Vm] self, for easy call chaining
   def stop
     control :kill
     self
@@ -119,10 +167,11 @@ class Vm
 
   # Controls a started virtual machine.
   #
-  # The following actions are supported:
+  # @param [Symbol] action the following actions are supported: 
   #   :kill:: hard power-off (pulling the power cord from the machine)
   #   :power_button:: Power button press
   #   :nmi:: NMI (non-maskable interrupt)
+  # @return [VirtualBox::Vm] self, for easy call chaining
   def control(action)
     action = case action
     when :kill
@@ -205,9 +254,13 @@ class Vm
   # @return [VirtualBox::Vm] self, for easy call chaining
   def push_config
     command = ['VBoxManage', 'modifyvm', uid]
-    command.concat specs.to_params
+    command.concat board.to_params
     nics.each_with_index do |nic, index|
-      command.concat nic.to_params(index + 1)
+      if nic.nil?
+        command.push "--nic#{index + 1}", 'none'
+      else
+        command.concat nic.to_params(index + 1)
+      end
     end
     if VirtualBox.run_command(command).status != 0
       raise 'Unexpected error code returned by VirtualBox'
@@ -232,12 +285,16 @@ class Vm
     
     self.name = config['name']
     self.uid = config['UUID']
-    specs.from_params config
+    board.from_params config
     
     nic_count = config.keys.select { |key| /^nic\d+$/ =~ key }.max[3..-1].to_i
     1.upto nic_count do |index|
-      nics[index - 1] ||= VirtualBox::Nic.new
-      nics[index - 1].from_params config, index
+      if config["nic#{index}"] == 'none'
+        nics[index - 1] = nil
+      else
+        nics[index - 1] ||= VirtualBox::Nic.new
+        nics[index - 1].from_params config, index
+      end
     end
 
     bus_count = 1 + (config.keys.select { |key|

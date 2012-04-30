@@ -1,9 +1,9 @@
 require File.expand_path('../helper.rb', File.dirname(__FILE__))
 
-describe 'Machine' do 
+describe 'Board' do 
   describe 'os_types' do
     before do
-      @types = VirtualBox::Machine.os_types
+      @types = VirtualBox::Board.os_types
     end
     it 'should map linux 2.6' do
       @types.must_include :linux26
@@ -19,23 +19,21 @@ describe 'Machine' do
     end
   end
   
-  describe 'non-standard settings' do
+  describe 'non-standard board specification' do
     before do
-      machine = VirtualBox::Machine.new :os => :ubuntu, :ram => 768,
-          :cpus => 2, :video_ram => 16, :boot_order => [:dvd, :net, :disk]
-    
-      @vm = VirtualBox::Vm.new :specs => machine
+      @vm = VirtualBox::Vm.new :board => { :os => :fedora, :ram => 768,
+          :cpus => 2, :video_ram => 22, :boot_order => [:dvd, :net, :disk] }
       @vm.register
     end
     after do
       @vm.unregister
     end
     
-    it 'should push/pull specs correctly' do
+    it 'should push/pull specification correctly' do
       vm = VirtualBox::Vm.new :uid => @vm.uid
       
       vm.pull_config
-      vm.specs.to_hash.must_equal @vm.specs.to_hash
+      vm.board.to_hash.must_equal @vm.board.to_hash
     end
   end
 end

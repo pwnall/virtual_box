@@ -76,15 +76,13 @@ class Nic
   # Arguments to "VBoxManage modifyvm" describing the NIC.
   #
   # @param [Number] nic_id the number of the card (1-4) connected to the host
-  # @return [Array<String>]
+  # @return [Array<String>] arguments that can be concatenated to a "VBoxManage
+  #     modifyvm" command to express this NIC specification
   def to_params(nic_id)
     params = []
         
     params.push "--nic#{nic_id}"
     case mode
-    when :none
-      params.push 'none'
-      return params
     when :nat
       params.push 'nat'
     when :bridged
@@ -139,13 +137,6 @@ class Nic
     when 'hostonly'
       self.mode = :host
       self.net_id = params["hostonlyadapter#{nic_id}"]    
-    when 'none'
-      self.mode = :none
-      self.chip = nil
-      self.net_id = nil
-      self.mac = nil
-      self.trace_file = nil
-      return      
     end
     
     self.chip = case params["nictype#{nic_id}"]

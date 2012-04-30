@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Victor Costan"]
-  s.date = "2012-04-28"
+  s.date = "2012-04-30"
   s.description = "Drives the VirtualBox command-line to manage VMs"
   s.email = "victor@costan.us"
   s.extra_rdoc_files = [
@@ -24,31 +24,34 @@ Gem::Specification.new do |s|
     "Gemfile",
     "Gemfile.lock",
     "LICENSE.txt",
+    "README.markdown",
     "Rakefile",
     "VERSION",
     "lib/virtual_box.rb",
+    "lib/virtual_box/board.rb",
     "lib/virtual_box/cli.rb",
     "lib/virtual_box/dhcp.rb",
     "lib/virtual_box/disk.rb",
     "lib/virtual_box/io_bus.rb",
-    "lib/virtual_box/machine.rb",
     "lib/virtual_box/nic.rb",
     "lib/virtual_box/version.rb",
     "lib/virtual_box/vm.rb",
     "test/helper.rb",
+    "test/tasks/tinycore.rake",
+    "test/virtual_box/board_test.rb",
     "test/virtual_box/cli_test.rb",
     "test/virtual_box/dhcp_test.rb",
     "test/virtual_box/disk_test.rb",
     "test/virtual_box/io_bus_test.rb",
-    "test/virtual_box/machine_test.rb",
     "test/virtual_box/nic_test.rb",
     "test/virtual_box/version_test.rb",
-    "test/virtual_box/vm_test.rb"
+    "test/virtual_box/vm_test.rb",
+    "virtual_box.gemspec"
   ]
   s.homepage = "http://github.com/csail/police"
   s.licenses = ["MIT"]
   s.require_paths = ["lib"]
-  s.rubygems_version = "1.8.23"
+  s.rubygems_version = "1.8.18"
   s.summary = "VirtualBox driver"
 
   if s.respond_to? :specification_version then

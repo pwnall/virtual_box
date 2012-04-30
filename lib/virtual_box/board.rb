@@ -2,83 +2,110 @@
 
 module VirtualBox
 
-# Configuration for a virtual machine.
-class Machine
-  # The number of CPUs in the VM.
+# Specification for a virtual machine's motherboard.
+class Board
+  # The number of CPUs (cores) on this board.
+  # @return [Integer]
   attr_accessor :cpus
 
-  # The amount of megabytes of RAM in the VM.
+  # The amount of megabytes of RAM on this board.
+  # @return [Integer]
   attr_accessor :ram
-  # The amount of megabytes of video RAM in the VM.
+  # The amount of megabytes of video RAM on this board's video card.
+  # @return [Integer]
   attr_accessor :video_ram
   
   # The UUID presented to the guest OS.
+  # @return [String]
   attr_accessor :hardware_id  
   
   # The OS that will be running in the virtualized VM.
   #
-  # This is used to improve the virtualization performance.
+  # Used to improve the virtualization performance.
+  # @return [Symbol]
   attr_accessor :os
   
   # Whether the VM supports PAE (36-bit address space).
+  # @return [Boolean]
   attr_accessor :pae  
   # Whether the VM supports ACPI.
+  # @return [Boolean]
   attr_accessor :acpi
   # Whether the VM supports I/O APIC.
   #
   # This is necessary for 64-bit OSes, but makes the virtualization slower.
+  # @return [Boolean]
   attr_accessor :io_apic
     
-  # Whether the VM attempts to use hardware support (Intel VT-x or AMD-V).
+  # Whether the VMM attempts to use hardware support (Intel VT-x or AMD-V).
   #
   # Hardware virtualization can increase VM performance, especially used in
   # conjunction with the other hardware virtualization options. However, using
-  # hardware virtualzation in conjunction with other hypervisors can crash the
+  # hardware virtualization in conjunction with other hypervisors can crash the
   # host machine.
+  # @return [Boolean]
   attr_accessor :hardware_virtualization
-  # Whether the VM uses hardware support for nested paging.
+  # Whether the VMM uses hardware support for nested paging.
   #
   # The option is used only if hardware_virtualization is set.
+  # @return [Boolean]
   attr_accessor :nested_paging
-  # Whether the VM uses hardware support for tagged TLB (VPID).
+  # Whether the VMM uses hardware support for tagged TLB (VPID).
   #
   # The option is used only if hardware_virtualization is set. 
+  # @return [Boolean]
   attr_accessor :tagged_tlb
   
   # Whether the VM supports 3D acceleration.
   #
   # 3D acceleration will only work with the proper guest extensions.
+  # @return [Boolean]
   attr_accessor :accelerate_3d
   
-  # Whether the BIOS logo will fade in when the VM boots.
+  # Whether the BIOS logo will fade in when the board boots.
+  # @return [Boolean]
   attr_accessor :bios_logo_fade_in
-  # Whether the BIOS logo will fade out when the VM boots.
+  # Whether the BIOS logo will fade out when the board boots.
+  # @return [Boolean]
   attr_accessor :bios_logo_fade_out
-  # The number of seconds to display the BIOS logo when the VM boots.
+  # The number of seconds to display the BIOS logo when the board boots.
+  # @return [Integer]
   attr_accessor :bios_logo_display_time
   # Whether the BIOS allows the user to temporarily override the boot VM device. 
   #
-  # If +false+, no override is allowed. Otherwise, the user can press F12 at
+  # If false, no override is allowed. Otherwise, the user can press F12 at
   # boot time to select a boot device. The user gets a prompt at boot time if
-  # the value is +true+. If the value is +:menu_only+ the user does not get a
-  # prompt, but can still press F12 to select a device.  
+  # the value is true. If the value is :menu_only the user does not get a
+  # prompt, but can still press F12 to select a device.
+  # @return [Boolean, Symbol]
   attr_accessor :bios_boot_menu  
   # Indicates the boot device search order for the VM's BIOS.
   #
-  # This is an array that can contain the following symbols: +:floppy+, +:dvd+,
-  # +:disk+, +:net+. Symbols should not be repeated.
+  # This is an array that can contain the following symbols: :floppy+, :dvd,
+  # :disk, :net. Symbols should not be repeated.
+  # @return [Array<Symbol>]
   attr_accessor :boot_order
   
   # If +true+, EFI firmware will be used instead of BIOS, for booting.
+  #
+  # The VirtualBox documentation states that EFI booting is highly experimental,
+  # and should only be used to virtualize MacOS.
+  # @return [Boolean]
   attr_accessor :efi
   
-  # Creates a VM configuration with the given attributes
+  # Creates a new motherboard specification based on the given attributes.
+  #
+  # @param Hash<Symbol, Object> options ActiveRecord-style initial values for
+  #     attributes; can be used together with Board#to_hash to save and restore
   def initialize(options = {})
     reset
     options.each { |k, v| self.send :"#{k}=", v }
   end  
    
   # Arguments to "VBoxManage modifyvm" describing the VM's general settings.
+  #
+  # @return [Array<String>] arguments that can be concatenated to a "VBoxManage
+  #     modifyvm" command
   def to_params
     params = []
     params.push '--cpus', cpus.to_s
@@ -122,6 +149,9 @@ class Machine
   end
   
   # Parses "VBoxManage showvminfo --machinereadable" output into this instance.
+  #
+  # @param [Hash<String, String>] output parsed by Vm.parse_machine_readble  
+  # @return [VirtualBox::Board] self, for easy call chaining
   def from_params(params)
     self.cpus = params['cpus'].to_i
     self.ram = params['memory'].to_i
@@ -163,6 +193,7 @@ class Machine
   # Resets to default settings.
   #
   # The defaults are chosen somewhat arbitrarily by the gem's author.
+  # @return [VirtualBox::Board] self, for easy call chaining
   def reset
     self.cpus = 1
     self.ram = 512
@@ -186,9 +217,13 @@ class Machine
     self.bios_boot_menu = false
     
     self.boot_order = [:disk, :net, :dvd]
+    self
   end
   
-  # Hash capturing this configuration. Can be passed to Machine#new.
+  # Hash capturing this motherboard specification. Can be passed to Board#new.
+  #
+  # @return [Hash<Symbol, Object>] Ruby-friendly Hash that can be used to
+  #                                re-create this motherboard specification
   def to_hash
     { :cpus => cpus, :ram => ram, :video_ram => video_ram,
       :hardware_id => hardware_id, :os => os, :pae => pae, :acpi => acpi,
@@ -203,8 +238,10 @@ class Machine
   
   # The OS types supported by the VirtualBox installation.
   #
-  # A hash that maps symbols to the proper VirtualBox OS IDs, and also maps
-  # ID and description strings to symbols.
+  # @return [Hash<Symbol|String, String|Symbol>] mapping from
+  #     programmer-friendly symbols (e.g. :linux26) to proper VirtualBox OS IDs,
+  #     and from VirtualBox IDs and description strings to programmer-friendly
+  #     symbols
   def self.os_types
     return @os_types if @os_types
     
@@ -221,7 +258,8 @@ class Machine
   
   # Queries VirtualBox for available OS types.
   #
-  # Returns a hash mapping each type ID to its description.
+  # @return [Hash<String, String> mapping from each VirtualBox OS type ID to its
+  #     description
   def self.list_os_types
     result = VirtualBox.run_command ['VBoxManage', '--nologo', 'list',
                                      '--long', 'ostypes']
@@ -235,6 +273,6 @@ class Machine
     end
     Hash[types]
   end
-end  # class VirtualBox::Machine
+end  # class VirtualBox::Board
 
 end  # namespace VirtualBox
