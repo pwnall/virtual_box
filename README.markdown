@@ -28,7 +28,7 @@ Running tests relies on a few command-line tools.
 On Fedora, use the following command to install the packages.
 
 ```bash
-sudo yum install advancecomp curl mkisofs p7zip squashfs
+sudo yum install advancecomp curl mkisofs p7zip squashfs-tools
 ```
 
 On OSX, run the following command.
