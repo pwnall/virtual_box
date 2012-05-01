@@ -83,6 +83,10 @@ class Board
   # :disk, :net. Symbols should not be repeated.
   # @return [Array<Symbol>]
   attr_accessor :boot_order
+
+  # True if the motherboard includes an audio chipset.
+  # @return [Boolean]
+  attr_accessor :audio
   
   # If +true+, EFI firmware will be used instead of BIOS, for booting.
   #
@@ -143,6 +147,8 @@ class Board
       params.push "--boot#{i}", (device ? device.to_s : 'none')
     end
     
+    params.push '--audio', (audio ? 'null' : 'none') 
+    
     params
   end
   
@@ -186,6 +192,8 @@ class Board
       boot_order << params[boot_key].to_sym
     end
     
+    self.audio = params['audio'] != 'none'
+    
     self
   end
   
@@ -216,6 +224,8 @@ class Board
     self.bios_boot_menu = false
     
     self.boot_order = [:disk, :net, :dvd]
+    
+    self.audio = false
     self
   end
   
@@ -232,7 +242,7 @@ class Board
       :bios_logo_fade_in => bios_logo_fade_in,
       :bios_logo_fade_out => bios_logo_fade_out,
       :bios_logo_display_time => bios_logo_display_time,
-      :bios_boot_menu => bios_boot_menu }
+      :bios_boot_menu => bios_boot_menu, :audio => audio }
   end
   
   # The OS types supported by the VirtualBox installation.

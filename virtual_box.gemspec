@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Victor Costan"]
-  s.date = "2012-04-30"
+  s.date = "2012-05-01"
   s.description = "Drives the VirtualBox command-line to manage VMs"
   s.email = "victor@costan.us"
   s.extra_rdoc_files = [
@@ -33,6 +33,7 @@ Gem::Specification.new do |s|
     "lib/virtual_box/dhcp.rb",
     "lib/virtual_box/disk.rb",
     "lib/virtual_box/io_bus.rb",
+    "lib/virtual_box/net.rb",
     "lib/virtual_box/nic.rb",
     "lib/virtual_box/version.rb",
     "lib/virtual_box/vm.rb",
@@ -42,7 +43,9 @@ Gem::Specification.new do |s|
     "test/virtual_box/cli_test.rb",
     "test/virtual_box/dhcp_test.rb",
     "test/virtual_box/disk_test.rb",
+    "test/virtual_box/integration_test.rb",
     "test/virtual_box/io_bus_test.rb",
+    "test/virtual_box/net_test.rb",
     "test/virtual_box/nic_test.rb",
     "test/virtual_box/version_test.rb",
     "test/virtual_box/vm_test.rb",
@@ -51,7 +54,7 @@ Gem::Specification.new do |s|
   s.homepage = "http://github.com/csail/police"
   s.licenses = ["MIT"]
   s.require_paths = ["lib"]
-  s.rubygems_version = "1.8.18"
+  s.rubygems_version = "1.8.23"
   s.summary = "VirtualBox driver"
 
   if s.respond_to? :specification_version then
@@ -60,32 +63,32 @@ Gem::Specification.new do |s|
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
       s.add_runtime_dependency(%q<hashie>, [">= 0.4.0"])
       s.add_runtime_dependency(%q<uuid>, [">= 2.3.5"])
-      s.add_development_dependency(%q<bundler>, [">= 1.1.0"])
+      s.add_development_dependency(%q<bundler>, [">= 1.1.3"])
       s.add_development_dependency(%q<jeweler>, [">= 1.8.3"])
-      s.add_development_dependency(%q<mechanize>, [">= 2.3"])
       s.add_development_dependency(%q<minitest>, [">= 2.12.1"])
       s.add_development_dependency(%q<mocha>, [">= 0.11.0"])
+      s.add_development_dependency(%q<net-ssh>, [">= 2.3.0"])
       s.add_development_dependency(%q<simplecov>, [">= 0.6.1"])
       s.add_development_dependency(%q<yard>, [">= 0.7.5"])
     else
       s.add_dependency(%q<hashie>, [">= 0.4.0"])
       s.add_dependency(%q<uuid>, [">= 2.3.5"])
-      s.add_dependency(%q<bundler>, [">= 1.1.0"])
+      s.add_dependency(%q<bundler>, [">= 1.1.3"])
       s.add_dependency(%q<jeweler>, [">= 1.8.3"])
-      s.add_dependency(%q<mechanize>, [">= 2.3"])
       s.add_dependency(%q<minitest>, [">= 2.12.1"])
       s.add_dependency(%q<mocha>, [">= 0.11.0"])
+      s.add_dependency(%q<net-ssh>, [">= 2.3.0"])
       s.add_dependency(%q<simplecov>, [">= 0.6.1"])
       s.add_dependency(%q<yard>, [">= 0.7.5"])
     end
   else
     s.add_dependency(%q<hashie>, [">= 0.4.0"])
     s.add_dependency(%q<uuid>, [">= 2.3.5"])
-    s.add_dependency(%q<bundler>, [">= 1.1.0"])
+    s.add_dependency(%q<bundler>, [">= 1.1.3"])
     s.add_dependency(%q<jeweler>, [">= 1.8.3"])
-    s.add_dependency(%q<mechanize>, [">= 2.3"])
     s.add_dependency(%q<minitest>, [">= 2.12.1"])
     s.add_dependency(%q<mocha>, [">= 0.11.0"])
+    s.add_dependency(%q<net-ssh>, [">= 2.3.0"])
     s.add_dependency(%q<simplecov>, [">= 0.6.1"])
     s.add_dependency(%q<yard>, [">= 0.7.5"])
   end

@@ -8,7 +8,7 @@ group :development do
   gem 'jeweler', '>= 1.8.3'
   gem 'minitest', '>= 2.12.1'
   gem 'mocha', '>= 0.11.0', :require => false
-  gem 'net-ssh-simple', '>= 1.5.4'
+  gem 'net-ssh', '>= 2.3.0', :require => 'net/ssh'
   gem 'simplecov', '>= 0.6.1'
   gem 'yard', '>= 0.7.5'
 end

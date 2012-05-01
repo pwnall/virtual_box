@@ -25,9 +25,10 @@ describe VirtualBox::Nic do
     before do            
       @vm = VirtualBox::Vm.new :nics => [
         { :mode => :bridged, :chip => :amd,
-          :net_id => VirtualBox::Nic.host_nics.first[:id],
+          :net_name => VirtualBox::Nic.host_nics.first[:id],
           :mac => 'aabbccddeeff' },
-        { :port => 2, :mode => :virtual, :chip => :virtual, :net_id => 'rbx00' }
+        { :port => 2, :mode => :virtual, :chip => :virtual,
+          :net_name => 'rbx00' }
       ]
       @vm.register
     end

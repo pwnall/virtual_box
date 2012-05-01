@@ -127,7 +127,12 @@ class Vm
       raise 'Unexpected error code returned by VirtualBox'
     end
     
-    push_config
+    begin
+      push_config
+    rescue
+      unregister
+      raise
+    end
     
     self
   end
@@ -185,36 +190,6 @@ class Vm
     if result.status != 0
       raise 'Unexpected error code returned by VirtualBox'
     end
-    self
-  end
-  
-  # Creates the virtual machine configuration in VirtualBox.
-  #
-  # @param [String] config_path path to the VM configuration file that will be
-  #                             created
-  # @return [VirtualBox::Vm] self, for easy call chaining
-  def create_configuration(config_path = nil)
-    raise 'Cannot create a configuration without a VM name' unless name
-    
-    command = %|VBoxManage --nologo createvm --name "#{name}"|
-    if config_path
-      command += %| --settingsfile "#{File.expand_path config_path}"|
-    end
-    
-    result = VirtualBox.shell_command command
-    raise 'VM creation failed' unless result[:status] == 0
-    
-    uuid_match = /^UUID: (.*)$/.match result[:output]
-    unless uuid_match
-      raise "VM creation didn't output a UUID:\n#{result[:output]}"
-    end
-    self.uuid = uuid_match[1]    
-    config_match = /^Settings file: '(.*)'$/.match result[:output]
-    unless uuid_match
-      raise "VM creation didn't output a config file path:\n#{result[:output]}"
-    end
-    self.config_file = config_match[1]
-    
     self
   end
   

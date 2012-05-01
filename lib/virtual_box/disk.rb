@@ -55,8 +55,7 @@ class Disk
     end
     result = VirtualBox.run_command ['VBoxManage', '--nologo', 'storageattach',
         vm.uid, '--storagectl', io_bus.name, '--port', port.to_s,
-        '--device', device.to_s, '--type', media_arg, '--medium', file,
-        '--mtype', 'normal']
+        '--device', device.to_s, '--type', media_arg, '--medium', file]
     if result.status != 0
       raise 'Unexpected error code returned by VirtualBox'
     end

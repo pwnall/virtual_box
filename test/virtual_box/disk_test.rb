@@ -81,6 +81,7 @@ describe VirtualBox::Disk do
     let(:disk1_file) { '/tmp/disk1.vdi' }
     let(:disk2_file) { '/tmp/disk2.vdi' }
     let(:disk3_file) { '/tmp/disk3.vdi' }
+    let(:iso_file) { 'test/fixtures/tinycore/remix.iso' }
     before do
       [disk1_file, disk2_file, disk3_file].each do |file|
         File.unlink file if File.exist?(file)
@@ -92,7 +93,8 @@ describe VirtualBox::Disk do
             { :file => disk1_file, :port => 0, :device => 0 },
             { :file => disk2_file }
           ]},
-        { :bus => :ide, :disks => [{ :file => disk3_file }] }
+        { :bus => :ide, :disks => [{ :file => iso_file }]},
+        { :bus => :scsi, :disks => [{ :file => disk3_file }] }
       ]
       @vm.register
     end

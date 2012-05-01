@@ -24,7 +24,7 @@ class Nic
   # @return [Symbol]
   attr_accessor :chip
   
-  # Identifier of the network that the NIC is connected to.
+  # Name of the virtual network that the NIC is connected to.
   #
   # The identifier differs depending on the networking mode:
   # :nat:: not applicable
@@ -32,7 +32,7 @@ class Nic
   # :host:: name of the host-only network interface
   # :virtual:: virtual network name
   # @return [Symbol]
-  attr_accessor :net_id
+  attr_accessor :net_name
   
   # MAC address for the network card, as a hexadecimal string.
   #
@@ -49,7 +49,7 @@ class Nic
     
   undef :mode
   def mode
-    @mode ||= :none
+    @mode ||= :nat
   end
 
   undef :chip
@@ -90,11 +90,11 @@ class Nic
     when :nat
       params.push 'nat'
     when :bridged
-      params.push 'bridged', "--bridgeadapter#{nic_id}", net_id
+      params.push 'bridged', "--bridgeadapter#{nic_id}", net_name
     when :virtual
-      params.push 'intnet', "--intnet#{nic_id}", net_id
+      params.push 'intnet', "--intnet#{nic_id}", net_name
     when :host
-      params.push 'hostonly', "--hostonlyadapter#{nic_id}", net_id
+      params.push 'hostonly', "--hostonlyadapter#{nic_id}", net_name
     else
       params.push 'null'
     end
@@ -135,13 +135,13 @@ class Nic
       self.mode = :nat
     when 'bridged'
       self.mode = :bridged
-      self.net_id = params["bridgeadapter#{nic_id}"]
+      self.net_name = params["bridgeadapter#{nic_id}"]
     when 'intnet'
       self.mode = :virtual
-      self.net_id = params["intnet#{nic_id}"]
+      self.net_name = params["intnet#{nic_id}"]
     when 'hostonly'
       self.mode = :host
-      self.net_id = params["hostonlyadapter#{nic_id}"]    
+      self.net_name = params["hostonlyadapter#{nic_id}"]    
     end
     
     self.chip = case params["nictype#{nic_id}"]
@@ -172,7 +172,7 @@ class Nic
   # @return [Hash<Symbol, Object>] Ruby-friendly Hash that can be used to
   #                                re-create this NIC specification
   def to_hash
-    { :mode => mode, :chip => chip, :net_id => net_id, :mac => mac,
+    { :mode => mode, :chip => chip, :net_name => net_name, :mac => mac,
       :trace_file => trace_file }
   end
   
