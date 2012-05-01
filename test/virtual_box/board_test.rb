@@ -1,6 +1,6 @@
 require File.expand_path('../helper.rb', File.dirname(__FILE__))
 
-describe 'Board' do 
+describe VirtualBox::Board do 
   describe 'os_types' do
     before do
       @types = VirtualBox::Board.os_types

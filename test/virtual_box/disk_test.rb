@@ -1,6 +1,6 @@
 require File.expand_path('../helper.rb', File.dirname(__FILE__))
 
-describe 'Disk' do
+describe VirtualBox::Disk do
   describe 'new with ISO' do
     before do
       @disk = VirtualBox::Disk.new :file => 'disk.iso'      

@@ -1,5 +1,3 @@
-# Manage the VM lifecycle.
-
 module VirtualBox
 
 # VirtualBox virtual machine.
@@ -86,7 +84,7 @@ class Vm
   
   # Creates a new virtual machine specification based on the given attributes.
   #
-  # @param Hash<Symbol, Object> options ActiveRecord-style initial values for
+  # @param [Hash<Symbol, Object>] options ActiveRecord-style initial values for
   #     attributes; can be used together with Vm#to_hash to save and restore
   def initialize(options = {})
     self.board = {}
@@ -310,7 +308,7 @@ class Vm
   
   # Parses the output of the 'VBoxManage showvminfo --machinereadable' command.
   #
-  # @param [String] the command output
+  # @param [String] output the command output
   # @return [Hash<String, Object>] a Hash whose keys are the strings on the left
   #     side of "=" on each line, and whose values are the strings on the right
   #     side

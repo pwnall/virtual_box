@@ -1,6 +1,6 @@
 require File.expand_path('../helper.rb', File.dirname(__FILE__))
 
-describe 'Nic' do 
+describe VirtualBox::Nic do 
   describe 'host_nics' do
     let(:nics) { VirtualBox::Nic.host_nics }
     

@@ -1,6 +1,6 @@
 require File.expand_path('../helper.rb', File.dirname(__FILE__))
 
-describe 'IoBus' do
+describe VirtualBox::IoBus do
   describe 'IDE' do
     it 'should default to the PIIX4 chipset' do
       VirtualBox::IoBus.new(:bus => :ide).chip.must_equal :piix4

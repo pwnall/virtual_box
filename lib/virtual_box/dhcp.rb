@@ -1,26 +1,27 @@
-# Configures VirtualBox's DHCP server for virtual networks.
-
 module VirtualBox
 
-# Descriptor for a VirtualBox DHCP server rule.
+# Specification for a virtual DHCP server.
 class Dhcp
-  # The name of the VirtualBox internal network served by this DHCP server.
+  # The name of the VirtualBox network served by this DHCP server.
+  #
+  # This name must match the name of a host-only or internal network that is
+  # registered with VirtualBox.
   # @return [String]
-  attr_accessor :name
+  attr_accessor :net_name
   
-  # The DHCP server's IP address.
+  # This DHCP server's IP address on the virtual network that it serves.
   # @return [String]
   attr_accessor :ip
   
-  # The network mask reported by the DHCP server.
+  # The network mask reported by this DHCP server.
   # @return [String]
   attr_accessor :netmask
   
-  # The first IP address in the DHCP server address pool.
+  # The first IP address in this DHCP server's address pool.
   # @return [String]
   attr_accessor :start_ip
 
-  # The last IP address in the DHCP server address pool.
+  # The last IP address in this DHCP server's address pool.
   # @return [String]
   attr_accessor :end_ip
 
@@ -47,28 +48,39 @@ class Dhcp
                                    ~nm - 1)
   end
 
-  # Creates a DHCP rule based on the given attributes.
+  # Creates a DHCP server specification based on the given attributes.
   #
-  # This does not register the rule with VirtualBox.
-  def initialize(options)
+  # The DHCP server is not automatically added to VirtualBox.
+  # @param [Hash<Symbol, Object>] options ActiveRecord-style initial values for
+  #     attributes; can be used together with Net#to_hash to save and restore
+  def initialize(options = {})
     options.each { |k, v| self.send :"#{k}=", v }
   end
   
-  # True if this DHCP rule has been registered with VirtualBox.
-  def registered?
-    rules = self.class.registered
-    rule = rules.find { |rule| rule.name == name }
-    rule ? true : false
+  # Hash capturing this specification. Can be passed to Dhcp#new.
+  #
+  # @return [Hash<Symbol, Object>] Ruby-friendly Hash that can be used to
+  #                                re-create this DHCP server specification
+  def to_hash
+    { :net_name => 'net_name', :ip => ip, :netmask => netmask,
+      :start_ip => start_ip, :end_ip => end_ip }
   end
   
-  # Registers this disk with VirtualBox.
+  # True if this DHCP rule has been registered with VirtualBox.
+  def live?
+    servers = self.class.all
+    dhcp = servers.find { |server| server.net_name == net_name }
+    dhcp ? true : false
+  end
+  
+  # Adds this DHCP server to VirtualBox.
   #
   # @return [VirtualBox::Dhcp] self, for easy call chaining
-  def register
-    unregister if registered?
+  def add
+    remove if live?
     
     result = VirtualBox.run_command ['VBoxManage', 'dhcpserver', 'add',
-        '--netname', name, '--ip', ip, '--netmask', netmask,
+        '--netname', net_name, '--ip', ip, '--netmask', netmask,
         '--lowerip', start_ip, '--upperip', end_ip, '--enable']
     if result.status != 0
       raise 'Unexpected error code returned by VirtualBox'
@@ -76,44 +88,45 @@ class Dhcp
     self
   end
   
-  # De-registers this disk from VirtualBox's database.
+  # Removes this DHCP server from VirtualBox.
   #
   # @return [VirtualBox::Dhcp] self, for easy call chaining
-  def unregister
-    VirtualBox.run_command ['VBoxManage', 'dhcpserver', 'remove',
-                            '--netname', name]
+  def remove
+    VirtualBox.run_command ['VBoxManage', 'dhcpserver', 'remove', '--netname',
+                            net_name]
     self
   end
   
-  # All the DHCP rules registered with VirtualBox.
+  # The DHCP servers added to with VirtualBox.
   #
-  # @return [Array<VirtualBox::Dhcp the DHCP rules registered with VirtualBox
-  def self.registered
-    result = VirtualBox.run_command ['VBoxManage', '--nologo', 'list',
-                                     '--long', 'dhcpservers']
+  # @return [Array<VirtualBox::Dhcp>] all the DHCP servers added to VirtualBox
+  def self.all
+    result = VirtualBox.run_command ['VBoxManage', '--nologo', 'list', '--long',
+                                     'dhcpservers']
     if result.status != 0
       raise 'Unexpected error code returned by VirtualBox'
     end
     result.output.split("\n\n").
-                  map { |dhcp_info| parse_dhcp_info dhcp_info }
+                  map { |dhcp_info| new.from_dhcp_info(dhcp_info) }
   end
   
-  # Parses information about a DHCP rule returned by VirtualBox.
+  # Parses information about a DHCP server returned by VirtualBox.
   #
-  # @param [String] disk_info output from "VBoxManage list --long dhcpservers"
-  #                           for one rule
+  # The parsed information is used to replace this network's specification.
+  # @param [String] dhcp_info output from "VBoxManage list --long dhcpservers"
+  #                           for one server
   # @return [VirtualBox::Dhcp] self, for easy call chaining
-  def self.parse_dhcp_info(dhcp_info)
-    i = Hash[dhcp_info.split("\n").map { |line| line.split(':').map(&:strip) }]
-    
-    name = i['NetworkName']
-    ip = i['IP']
-    netmask = i['NetworkMask']
-    start_ip = i['lowerIPAddress']
-    end_ip = i['upperIPAddress']
-    
-    new :name => name, :ip => ip, :netmask => netmask, :start_ip => start_ip,
-                       :end_ip => end_ip
+  def from_dhcp_info(dhcp_info)
+    info = Hash[dhcp_info.split("\n").map { |line|
+      line.split(':', 2).map(&:strip)
+    }]
+
+    self.net_name = info['NetworkName']
+    self.ip = info['IP']
+    self.netmask = info['NetworkMask']
+    self.start_ip = info['lowerIPAddress']
+    self.end_ip = info['upperIPAddress']
+    self
   end
   
   # Converts an IP number into a string.

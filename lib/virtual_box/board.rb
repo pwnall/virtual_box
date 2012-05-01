@@ -1,5 +1,3 @@
-# Configure a VM's general resources and settings.
-
 module VirtualBox
 
 # Specification for a virtual machine's motherboard.
@@ -95,7 +93,7 @@ class Board
   
   # Creates a new motherboard specification based on the given attributes.
   #
-  # @param Hash<Symbol, Object> options ActiveRecord-style initial values for
+  # @param [Hash<Symbol, Object>] options ActiveRecord-style initial values for
   #     attributes; can be used together with Board#to_hash to save and restore
   def initialize(options = {})
     reset
@@ -150,7 +148,8 @@ class Board
   
   # Parses "VBoxManage showvminfo --machinereadable" output into this instance.
   #
-  # @param [Hash<String, String>] output parsed by Vm.parse_machine_readble  
+  # @param [Hash<String, String>] params the "VBoxManage showvminfo" output,
+  #                                      parsed by Vm.parse_machine_readble
   # @return [VirtualBox::Board] self, for easy call chaining
   def from_params(params)
     self.cpus = params['cpus'].to_i

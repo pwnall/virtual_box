@@ -1,5 +1,3 @@
-# Keep track of the IO controllers in a VM.
-
 module VirtualBox
 
 # Specification for a IO controller attached to a virtual machine.
@@ -233,7 +231,7 @@ class IoBus
   
   # Creates a new IO controller specification based on the given attributes.
   #
-  # @param Hash<Symbol, Object> options ActiveRecord-style initial values for
+  # @param [Hash<Symbol, Object>] options ActiveRecord-style initial values for
   #     attributes; can be used together with IoBus#to_hash to save and restore
   def initialize(options = {})
     @disks = {}

@@ -1,5 +1,3 @@
-# Manage the images backing HDDs and DVDs attached to VMs.
-
 module VirtualBox
 
 # Descriptor for a VirtualBox hard-disk or DVD image.
@@ -33,7 +31,7 @@ class Disk
   
   # Creates an image descriptor with the given attributes.
   #
-  # @param Hash<Symbol, Object> options ActiveRecord-style initial values for
+  # @param [Hash<Symbol, Object>] options ActiveRecord-style initial values for
   #     attributes; can be used together with Disk#to_hash to save and restore
   def initialize(options)
     options.each { |k, v| self.send :"#{k}=", v }
@@ -42,10 +40,11 @@ class Disk
 
   # Attaches this disk to a virtual machine.
   #
-  # @param [VirtualBox::Vm] the VM that this image will be attached to
-  # @param [VirtualBox::IoBus] the IO controller this disk will be attached to
+  # @param [VirtualBox::Vm] vm the VM that this image will be attached to
+  # @param [VirtualBox::IoBus] io_bus the IO controller that this disk will be
+  #                                   attached to
   # @param [Integer] port the IO bus port this disk will be connected to
-  # @param [Integer] port number indicating the device's ordering on its port
+  # @param [Integer] device number indicating the device's ordering on its port
   # @return [VirtualBox::Disk] self, for easy call chaining
   def add_to(vm, io_bus, port, device)
     media_arg = case media

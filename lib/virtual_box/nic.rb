@@ -1,4 +1,4 @@
-# Configure a VM's general resources and settings.
+require 'securerandom'
 
 module VirtualBox
 
@@ -7,67 +7,71 @@ class Nic
   # The kind of network emulation implemented on this card.
   #
   # Can be one of the following values:
-  #   :nat:: uses VirtualBox internal NAT engine to hide under host OS
-  #   :bridged:: bypasses host OS, connects directly to a network interface
-  #   :host:: virtual network connecting guest to host
-  #   :virtual:: virtual network connecting multiple guests
+  # :nat:: uses VirtualBox internal NAT engine to hide under host OS
+  # :bridged:: bypasses host OS, connects directly to a network interface
+  # :host:: virtual network connecting guest to host
+  # :virtual:: virtual network connecting multiple guests
+  # @return [Symbol]
   attr_accessor :mode
   
   # The NIC controller chip.
   #
   # Can be one of the following values:
-  #    :amd:: AMD PCNet FAST III (good default)
-  #    :intel:: Intel PRO/1000 MT Server (for newer Windows systems)
-  #    :intel_xp:: Intel PRO/1000 MT Server (for Windows XP)
-  #    :virtio:: fake card optimized for virtualization (custom drivers needed)
+  # :amd:: AMD PCNet FAST III (good default)
+  # :intel:: Intel PRO/1000 MT Server (for newer Windows systems)
+  # :intel_xp:: Intel PRO/1000 MT Server (for Windows XP)
+  # :virtio:: fake card optimized for virtualization (custom drivers needed)
+  # @return [Symbol]
   attr_accessor :chip
   
   # Identifier of the network that the NIC is connected to.
   #
   # The identifier differs depending on the networking mode:
-  #   bridged:: name of the bridge network interface on the host
-  #   host:: name of the host-only network interface
-  #   virtual:: virtual network name
+  # :nat:: not applicable
+  # :bridged:: name of the bridge network interface on the host
+  # :host:: name of the host-only network interface
+  # :virtual:: virtual network name
+  # @return [Symbol]
   attr_accessor :net_id
   
   # MAC address for the network card, as a hexadecimal string.
   #
-  # Example: '001122334455'
-  #
-  # If null, the network card will receive a random address.
+  # The format for specifying MACs is '0123456789AB'. A random MAC will be
+  # generated if one is not assigned. 
+  # @return [String]
   attr_accessor :mac
   
   # Path to a file that logs a network trace for the VM.
   #
   # Can be null to disable tracing.
+  # @return [String]
   attr_accessor :trace_file
     
   undef :mode
-  # :nodoc: defined as accessor
   def mode
     @mode ||= :none
   end
 
   undef :chip
-  # :nodoc: defined as accessor
   def chip
     @chip ||= (:mode == :virtual) ? :virtual : :amd
   end
   
   undef :mac
-  # :nodoc: defined as accessor
   def mac
-    @mac ||= '001122334455'
+    return @mac if @mac
+    @mac = SecureRandom.hex(6).upcase
+    @mac[1] = 'A'  # Set the OUI bits to unicast and globally unique
+    @mac
   end
   undef :mac=
-  # :nodoc: defined as accessor
   def mac=(new_mac)
     @mac = new_mac && new_mac.upcase.gsub(/[^0-9A-F]/, '')
   end
   
   # Creates a NIC with the given attributes.
   #
-  # @param Hash<Symbol, Object> options ActiveRecord-style initial values for
+  # @param [Hash<Symbol, Object>] options ActiveRecord-style initial values for
   #     attributes; can be used together with Nic#to_hash to save and restore
   def initialize(options = {})
     options.each { |k, v| self.send :"#{k}=", v }
@@ -121,7 +125,8 @@ class Nic
   
   # Parses "VBoxManage showvminfo --machinereadable" output into this instance.
   #
-  # @param [Hash<String, String>] output parsed by Vm.parse_machine_readble
+  # @param [Hash<String, String>] params the "VBoxManage showvminfo" output,
+  #                                      parsed by Vm.parse_machine_readble
   # @param [Integer] nic_id the NIC's number in the VM
   # @return [VirtualBox::Nic] self, for easy call chaining
   def from_params(params, nic_id)
@@ -173,18 +178,19 @@ class Nic
   
   # Information about the NICs attached to the computer.
   #
-  # Returns an array of hashes with the following keys:
-  #   :id:: the inteface id (use when setting a Nic's net_id)
-  #   :ip:: the IP address (check for 0.0.0.0 to see if it's live)
-  #   :mask:: the netmask
-  #   :mac:: the NICs MAC address
+  # @return [Array<Hash<Symbol, Object>>] an array with one hash per NIC; hashes
+  #     have the following keys:
+  #     :id:: the inteface id (use when setting a Nic's net_id)
+  #     :ip:: the IP address (check for 0.0.0.0 to see if it's live)
+  #     :mask:: the netmask
+  #     :mac:: the NICs MAC address
   def self.host_nics
     @host_nics ||= get_host_nics
   end
 
   # Queries VirtualBox for the network interfaces on the computer.
   #
-  # See host_nics for return type.  
+  # @return (see .host_nics)
   def self.get_host_nics    
     result = VirtualBox.run_command ['VBoxManage', '--nologo', 'list',
                                      '--long', 'hostifs']

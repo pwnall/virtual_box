@@ -1,6 +1,6 @@
 require File.expand_path('../helper.rb', File.dirname(__FILE__))
 
-describe 'VM' do 
+describe VirtualBox::Vm do 
   describe 'anonymous' do
     before do
       @vm = VirtualBox::Vm.new
