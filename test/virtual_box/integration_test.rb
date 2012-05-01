@@ -7,7 +7,7 @@ describe 'VirtualBox' do
     iso_file = 'test/fixtures/tinycore/remix.iso'
     @net = VirtualBox::Net.new(:ip => '192.168.66.6',
                                :netmask => '255.255.255.0').add
-    @dhcp = VirtualBox::Dhcp.new(:net_name => @net.if_name,
+    @dhcp = VirtualBox::Dhcp.new(:net_name => @net.name,
                                  :start_ip => '192.168.66.66').add
     @vm = VirtualBox::Vm.new(
         :board => { :ram => 256, :cpus => 1, :video_ram => 16,
@@ -28,7 +28,7 @@ describe 'VirtualBox' do
     before do
       @vm.start
       # Give the VM a chance to boot and generate SSH keys.
-      Kernel.sleep 2
+      Kernel.sleep 3
     end
     
     after do
@@ -41,9 +41,9 @@ describe 'VirtualBox' do
     
     it 'should respond to a SSH connection' do
       output = nil
-      Net::SSH.start '192.168.66.66', 'tc', :timeout => 2,
+      Net::SSH.start '192.168.66.66', 'tc', :timeout => 10,
           :global_known_hosts_file => [], :user_known_hosts_file => [],
-          :paranoid => false do |ssh|
+          :paranoid => false, :password => '' do |ssh|
         output = ssh.exec!('ifconfig')
       end
       
