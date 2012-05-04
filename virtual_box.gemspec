@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = "virtual_box"
-  s.version = "0.1.0"
+  s.version = "0.1.1"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Victor Costan"]
-  s.date = "2012-05-01"
+  s.date = "2012-05-04"
   s.description = "Drives the VirtualBox command-line to manage VMs"
   s.email = "victor@costan.us"
   s.extra_rdoc_files = [
@@ -28,26 +28,26 @@ Gem::Specification.new do |s|
     "Rakefile",
     "VERSION",
     "lib/virtual_box.rb",
-    "lib/virtual_box/board.rb",
     "lib/virtual_box/cli.rb",
     "lib/virtual_box/dhcp.rb",
-    "lib/virtual_box/disk.rb",
-    "lib/virtual_box/io_bus.rb",
     "lib/virtual_box/net.rb",
-    "lib/virtual_box/nic.rb",
     "lib/virtual_box/version.rb",
     "lib/virtual_box/vm.rb",
+    "lib/virtual_box/vm/board.rb",
+    "lib/virtual_box/vm/disk.rb",
+    "lib/virtual_box/vm/io_bus.rb",
+    "lib/virtual_box/vm/nic.rb",
     "test/helper.rb",
     "test/tasks/tinycore.rake",
-    "test/virtual_box/board_test.rb",
     "test/virtual_box/cli_test.rb",
     "test/virtual_box/dhcp_test.rb",
-    "test/virtual_box/disk_test.rb",
     "test/virtual_box/integration_test.rb",
-    "test/virtual_box/io_bus_test.rb",
     "test/virtual_box/net_test.rb",
-    "test/virtual_box/nic_test.rb",
     "test/virtual_box/version_test.rb",
+    "test/virtual_box/vm/board_test.rb",
+    "test/virtual_box/vm/disk_test.rb",
+    "test/virtual_box/vm/io_bus_test.rb",
+    "test/virtual_box/vm/nic_test.rb",
     "test/virtual_box/vm_test.rb",
     "virtual_box.gemspec"
   ]
