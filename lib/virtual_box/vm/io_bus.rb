@@ -1,5 +1,7 @@
 module VirtualBox
 
+class Vm
+
 # Specification for a IO controller attached to a virtual machine.
 class IoBus
   # A user-friendly name for the I/O controller.
@@ -39,7 +41,7 @@ class IoBus
   attr_accessor :max_ports
   
   # The disks connected to this controller's bus.
-  # @return [Hash<Array<Integer>, VirtualBox::Disk>]
+  # @return [Hash<Array<Integer>, VirtualBox::Vm::Disk>]
   attr_accessor :disks
   
   undef :name
@@ -112,13 +114,13 @@ class IoBus
   def disks=(new_disks)
     @disks = {}
     new_disks.each do |disk|
-      if disk.kind_of? VirtualBox::Disk
+      if disk.kind_of? VirtualBox::Vm::Disk
         @disks[[first_free_port, 0]] = disk
       else
         options = disk.dup
         port = options.delete(:port) || first_free_port
         device = options.delete(:device) || 0
-        @disks[[port, device]] = VirtualBox::Disk.new options
+        @disks[[port, device]] = VirtualBox::Vm::Disk.new options
       end
     end
     new_disks
@@ -126,7 +128,7 @@ class IoBus
   
   # Parses "VBoxManage showvminfo --machinereadable" output into this instance.
   #
-  # @return [VirtualBox::IoBus] self, for easy call chaining
+  # @return [VirtualBox::Vm::IoBus] self, for easy call chaining
   def from_params(params, bus_id)
     self.name = params["storagecontrollername#{bus_id}"]
     self.bootable = params["storagecontrollerbootable#{bus_id}"] == 'on'
@@ -157,7 +159,7 @@ class IoBus
       next unless match = image_re.match(key)
       next if value == 'none'
       port, device = match[1].to_i, match[2].to_i
-      @disks[[port, device]] = VirtualBox::Disk.new :file => value
+      @disks[[port, device]] = VirtualBox::Vm::Disk.new :file => value
     end
     self
   end
@@ -192,7 +194,7 @@ class IoBus
   #
   # @param [VirtualBox::Vm] vm the virtual machine that this IO controller will
   #                            be added to
-  # @return [VirtualBox::IoBus] self, for easy call chaining
+  # @return [VirtualBox::Vm::IoBus] self, for easy call chaining
   def add_to(vm)
     add_bus_to vm
     disks.each do |port_device, disk|
@@ -205,7 +207,7 @@ class IoBus
   #
   # @param [VirtualBox::Vm] vm the virtual machine that this IO controller will
   #                            be removed from
-  # @return [VirtualBox::IoBus] self, for easy call chaining
+  # @return [VirtualBox::Vm::IoBus] self, for easy call chaining
   def remove_from(vm)
     result = VirtualBox.run_command ['VBoxManage', '--nologo', 'storagectl',
                                      vm.uuid, '--name', name, '--remove']
@@ -219,7 +221,7 @@ class IoBus
   #
   # @param [VirtualBox::Vm] vm the virtual machine that this IO bus will be
   #                            added to
-  # @return [VirtualBox::IoBus] self, for easy call chaining
+  # @return [VirtualBox::Vm::IoBus] self, for easy call chaining
   def add_bus_to(vm)
     command = ['VBoxManage', '--nologo', 'storagectl', vm.uid].concat to_params
     result = VirtualBox.run_command command
@@ -256,6 +258,8 @@ class IoBus
   def first_free_port
     disks.empty? ? 0 : disks.keys.min.first + 1
   end
-end  # class VirtualBox::IoBus
+end  # class VirtualBox::Vm::IoBus
+
+end  # class VirtualBox::Vm
 
 end  # namespace VirtualBox

@@ -1,5 +1,7 @@
 module VirtualBox
 
+class Vm
+
 # Specification for a virtual machine's motherboard.
 class Board
   # The number of CPUs (cores) on this board.
@@ -156,7 +158,7 @@ class Board
   #
   # @param [Hash<String, String>] params the "VBoxManage showvminfo" output,
   #                                      parsed by Vm.parse_machine_readble
-  # @return [VirtualBox::Board] self, for easy call chaining
+  # @return [VirtualBox::Vm::Board] self, for easy call chaining
   def from_params(params)
     self.cpus = params['cpus'].to_i
     self.ram = params['memory'].to_i
@@ -200,7 +202,7 @@ class Board
   # Resets to default settings.
   #
   # The defaults are chosen somewhat arbitrarily by the gem's author.
-  # @return [VirtualBox::Board] self, for easy call chaining
+  # @return [VirtualBox::Vm::Board] self, for easy call chaining
   def reset
     self.cpus = 1
     self.ram = 512
@@ -282,6 +284,8 @@ class Board
     end
     Hash[types]
   end
-end  # class VirtualBox::Board
+end  # class VirtualBox::Vm::Board
+
+end  # class VirtualBox::Vm
 
 end  # namespace VirtualBox

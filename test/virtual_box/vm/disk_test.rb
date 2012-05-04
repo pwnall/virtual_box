@@ -1,9 +1,9 @@
-require File.expand_path('../helper.rb', File.dirname(__FILE__))
+require File.expand_path('../../helper.rb', File.dirname(__FILE__))
 
-describe VirtualBox::Disk do
+describe VirtualBox::Vm::Disk do
   describe 'new with ISO' do
     before do
-      @disk = VirtualBox::Disk.new :file => 'disk.iso'      
+      @disk = VirtualBox::Vm::Disk.new :file => 'disk.iso'      
     end
     
     it 'should guess media type' do
@@ -21,8 +21,8 @@ describe VirtualBox::Disk do
     
       before do
         File.unlink vmdk_path if File.exist?(vmdk_path)
-        @disk = VirtualBox::Disk.create :file => vmdk_path, :prealloc => false,
-            :size => 16 * 1024 * 1024
+        @disk = VirtualBox::Vm::Disk.create :file => vmdk_path,
+            :prealloc => false, :size => 16 * 1024 * 1024
       end
       
       after do
@@ -51,8 +51,8 @@ describe VirtualBox::Disk do
       
       before do
         File.unlink vdi_path if File.exist?(vdi_path)
-        @disk = VirtualBox::Disk.create :file => vdi_path, :prealloc => true,
-            :size => 16 * 1024 * 1024
+        @disk = VirtualBox::Vm::Disk.create :file => vdi_path,
+            :prealloc => true, :size => 16 * 1024 * 1024
       end
       
       after do
@@ -85,7 +85,7 @@ describe VirtualBox::Disk do
     before do
       [disk1_file, disk2_file, disk3_file].each do |file|
         File.unlink file if File.exist?(file)
-        VirtualBox::Disk.create :file => file, :size => 16 * 1024 * 1024
+        VirtualBox::Vm::Disk.create :file => file, :size => 16 * 1024 * 1024
       end
     
       @vm = VirtualBox::Vm.new :io_buses => [

@@ -1,8 +1,8 @@
-require File.expand_path('../helper.rb', File.dirname(__FILE__))
+require File.expand_path('../../helper.rb', File.dirname(__FILE__))
 
-describe VirtualBox::Nic do 
+describe VirtualBox::Vm::Nic do 
   describe 'host_nics' do
-    let(:nics) { VirtualBox::Nic.host_nics }
+    let(:nics) { VirtualBox::Vm::Nic.host_nics }
     
     it 'should have at least 1 card' do
       nics.length.must_be :>=, 1
@@ -25,7 +25,7 @@ describe VirtualBox::Nic do
     before do            
       @vm = VirtualBox::Vm.new :nics => [
         { :mode => :bridged, :chip => :amd,
-          :net_name => VirtualBox::Nic.host_nics.first[:id],
+          :net_name => VirtualBox::Vm::Nic.host_nics.first[:id],
           :mac => 'aabbccddeeff' },
         { :port => 2, :mode => :virtual, :chip => :virtual,
           :net_name => 'rbx00' }

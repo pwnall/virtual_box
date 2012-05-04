@@ -18,15 +18,15 @@ class Vm
   attr_accessor :name
   
   # The general VM configuration.
-  # @return [VirtualBox::Board]
+  # @return [VirtualBox::Vm::Board]
   attr_accessor :board
   
   # The IO controllers (and disks) connected to the VM.
-  # @return [Array<VirtualBox::IoBus>]
+  # @return [Array<VirtualBox::Vm::IoBus>]
   attr_accessor :io_buses
   
   # The network cards connected to this virtual machine.
-  # @return [Array<VirtualBox::Nic>]
+  # @return [Array<VirtualBox::Vm::Nic>]
   attr_accessor :nics
   
   # If true, the VM's screen will be displayed in a GUI.
@@ -49,20 +49,20 @@ class Vm
   
   undef :board=
   def board=(new_board)
-    @board = if new_board.kind_of?(VirtualBox::Board)
+    @board = if new_board.kind_of?(VirtualBox::Vm::Board)
       new_board
     else
-      VirtualBox::Board.new new_board
+      VirtualBox::Vm::Board.new new_board
     end
   end
 
   undef :io_buses=
   def io_buses=(new_io_buses)
     @io_buses = new_io_buses.map do |io_bus|
-      if io_bus.kind_of?(VirtualBox::IoBus)
+      if io_bus.kind_of?(VirtualBox::Vm::IoBus)
         io_bus
       else
-        VirtualBox::IoBus.new io_bus
+        VirtualBox::Vm::IoBus.new io_bus
       end
     end
   end
@@ -71,12 +71,12 @@ class Vm
   def nics=(new_nics)
     @nics = []
     new_nics.each do |nic|
-      if nic.kind_of?(VirtualBox::Nic) || nic.nil?
+      if nic.kind_of?(VirtualBox::Vm::Nic) || nic.nil?
         @nics << nic
       else
         options = nic.dup
         port = options.delete(:port) || @nics.length
-        @nics[port] = VirtualBox::Nic.new options
+        @nics[port] = VirtualBox::Vm::Nic.new options
       end
     end
     new_nics
@@ -265,7 +265,7 @@ class Vm
       if config["nic#{index}"] == 'none'
         nics[index - 1] = nil
       else
-        nics[index - 1] ||= VirtualBox::Nic.new
+        nics[index - 1] ||= VirtualBox::Vm::Nic.new
         nics[index - 1].from_params config, index
       end
     end
@@ -274,7 +274,7 @@ class Vm
       /^storagecontrollername\d+$/ =~ key
     }.max || "storagecontrollername-1")[21..-1].to_i
     0.upto bus_count - 1 do |index|
-      io_buses[index] ||= VirtualBox::IoBus.new
+      io_buses[index] ||= VirtualBox::Vm::IoBus.new
       io_buses[index].from_params config, index
     end
     

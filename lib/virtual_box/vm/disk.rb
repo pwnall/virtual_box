@@ -1,5 +1,7 @@
 module VirtualBox
 
+class Vm
+
 # Descriptor for a VirtualBox hard-disk or DVD image.
 class Disk
   # Path to the file storing this disk image.
@@ -41,11 +43,11 @@ class Disk
   # Attaches this disk to a virtual machine.
   #
   # @param [VirtualBox::Vm] vm the VM that this image will be attached to
-  # @param [VirtualBox::IoBus] io_bus the IO controller that this disk will be
-  #                                   attached to
+  # @param [VirtualBox::Vm::IoBus] io_bus the IO controller that this disk will
+  #                                       be attached to
   # @param [Integer] port the IO bus port this disk will be connected to
   # @param [Integer] device number indicating the device's ordering on its port
-  # @return [VirtualBox::Disk] self, for easy call chaining
+  # @return [VirtualBox::Vm::Disk] self, for easy call chaining
   def add_to(vm, io_bus, port, device)
     media_arg = case media
     when :disk
@@ -80,7 +82,7 @@ class Disk
   # @option options [Boolean] prealloc unless explicitly set to true, the image
   #     file will grow in size as the disk's blocks are used
   #
-  # @return [VirtualBox::Disk] a Disk describing the image that was created
+  # @return [VirtualBox::Vm::Disk] a Disk describing the image that was created
   def self.create(options)
     path = options[:file]
     format = options[:format] || guess_image_format(path)
@@ -95,7 +97,7 @@ class Disk
       raise 'Unexpected error code returned by VirtualBox'
     end
     
-    Disk.new :file => path, :format => format, :media => :disk
+    new :file => path, :format => format, :media => :disk
   end
   
   # Disk image format based on the extension in the file name.
@@ -133,6 +135,8 @@ class Disk
       :disk
     end
   end
-end  # class VirtualBox::Disk
+end  # class VirtualBox::Vm::Disk
+
+end  # class VirtualBox::Vm
 
 end  # namespace VirtualBox

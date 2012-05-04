@@ -1,9 +1,9 @@
-require File.expand_path('../helper.rb', File.dirname(__FILE__))
+require File.expand_path('../../helper.rb', File.dirname(__FILE__))
 
-describe VirtualBox::Board do 
+describe VirtualBox::Vm::Board do 
   describe 'os_types' do
     before do
-      @types = VirtualBox::Board.os_types
+      @types = VirtualBox::Vm::Board.os_types
     end
     it 'should map linux 2.6' do
       @types.must_include :linux26

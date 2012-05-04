@@ -2,6 +2,8 @@ require 'securerandom'
 
 module VirtualBox
 
+class Vm
+
 # Configuration for a network card.
 class Nic
   # The kind of network emulation implemented on this card.
@@ -128,7 +130,7 @@ class Nic
   # @param [Hash<String, String>] params the "VBoxManage showvminfo" output,
   #                                      parsed by Vm.parse_machine_readble
   # @param [Integer] nic_id the NIC's number in the VM
-  # @return [VirtualBox::Nic] self, for easy call chaining
+  # @return [VirtualBox::Vm::Nic] self, for easy call chaining
   def from_params(params, nic_id)
     case params["nic#{nic_id}"]
     when 'nat'
@@ -208,6 +210,8 @@ class Nic
       }
     end
   end
-end  # class VirtualBox::Nic
+end  # class VirtualBox::Vm::Nic
+
+end  # class VirtualBox::Vm
 
 end  # namespace VirtualBox

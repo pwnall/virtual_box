@@ -41,7 +41,7 @@ describe 'VirtualBox' do
     
     it 'should respond to a SSH connection' do
       output = nil
-      Net::SSH.start '192.168.66.66', 'tc', :timeout => 10,
+      Net::SSH.start '192.168.66.66', 'tc', :timeout => 15,
           :global_known_hosts_file => [], :user_known_hosts_file => [],
           :paranoid => false, :password => '' do |ssh|
         output = ssh.exec!('ifconfig')
