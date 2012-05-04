@@ -26,7 +26,7 @@ describe VirtualBox::Net do
       
       it 'has an interface name that shows up in the ifconfig output' do
         @net.if_name.wont_be_nil
-        `ifconfig`.must_include @net.if_name
+        `ifconfig -a`.must_include @net.if_name
       end
       
       it 'has a name' do
@@ -67,7 +67,7 @@ describe VirtualBox::Net do
       
       it 'has an interface name that shows up in the ifconfig output' do
         @net.if_name.wont_be_nil
-        `ifconfig`.must_include @net.if_name
+        `ifconfig -a`.must_include @net.if_name
       end
       
       it 'shows up on the list of live networks' do
