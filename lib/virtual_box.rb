@@ -4,6 +4,7 @@ module VirtualBox
 end
 
 require 'hashie/mash'
+require 'posix/spawn'
 require 'uuid'
 
 require 'virtual_box/cli.rb'
