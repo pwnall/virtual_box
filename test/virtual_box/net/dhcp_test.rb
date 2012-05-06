@@ -1,9 +1,9 @@
-require File.expand_path('../helper.rb', File.dirname(__FILE__))
+require File.expand_path('../../helper.rb', File.dirname(__FILE__))
 
-describe VirtualBox::Dhcp do
+describe VirtualBox::Net::Dhcp do
   describe 'ip 192.168.0.1' do
     before do
-      @dhcp = VirtualBox::Dhcp.new :ip => '192.168.0.1'
+      @dhcp = VirtualBox::Net::Dhcp.new :ip => '192.168.0.1'
     end
     it 'has a default netmask' do
       @dhcp.netmask.must_equal '255.255.255.0'
@@ -18,7 +18,7 @@ describe VirtualBox::Dhcp do
   
   describe 'startip 192.168.0.64' do
     before do
-      @dhcp = VirtualBox::Dhcp.new :start_ip => '192.168.0.64'
+      @dhcp = VirtualBox::Net::Dhcp.new :start_ip => '192.168.0.64'
     end    
     it 'computes the server IP' do
       @dhcp.ip.must_equal '192.168.0.1'
@@ -26,26 +26,19 @@ describe VirtualBox::Dhcp do
   end
   
   describe 'random rule' do
+    let(:net_name) { 'rbxvbox0' }
+
     before do
-      @dhcp = VirtualBox::Dhcp.new :net_name => 'rbxvbox0', :ip => '10.1.0.1'
-    end
-    
-    it 'is not live' do
-      @dhcp.wont_be :live?
+      @dhcp = VirtualBox::Net::Dhcp.new :ip => '10.1.0.1'
     end
     
     describe 'after being added' do
-      before { @dhcp.add }
-      after { @dhcp.remove }
-      
-      it 'is live' do
-        @dhcp.must_be :live?
-      end
+      before { @dhcp.add net_name }
+      after { @dhcp.remove net_name }
       
       it 'shows up on the list of live servers' do
-        servers = VirtualBox::Dhcp.all
-        dhcp = servers.find { |s| s.net_name == @dhcp.net_name }
-        dhcp.to_hash.must_equal @dhcp.to_hash
+        dhcps = VirtualBox::Net::Dhcp.all
+        dhcps[net_name].to_hash.must_equal @dhcp.to_hash
       end
     end
   end

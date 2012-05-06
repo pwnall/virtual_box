@@ -1,14 +1,9 @@
 module VirtualBox
 
+class Net
+
 # Specification for a virtual DHCP server.
 class Dhcp
-  # The name of the VirtualBox network served by this DHCP server.
-  #
-  # This name must match the name of a host-only or internal network that is
-  # registered with VirtualBox.
-  # @return [String]
-  attr_accessor :net_name
-  
   # This DHCP server's IP address on the virtual network that it serves.
   # @return [String]
   attr_accessor :ip
@@ -66,48 +61,54 @@ class Dhcp
       :start_ip => start_ip, :end_ip => end_ip }
   end
   
-  # True if this DHCP rule has been registered with VirtualBox.
-  def live?
-    servers = self.class.all
-    dhcp = servers.find { |server| server.net_name == net_name }
-    dhcp ? true : false
-  end
-  
   # Adds this DHCP server to VirtualBox.
   #
-  # @return [VirtualBox::Dhcp] self, for easy call chaining
-  def add
-    remove if live?
-    
-    result = VirtualBox.run_command ['VBoxManage', 'dhcpserver', 'add',
-        '--netname', net_name, '--ip', ip, '--netmask', netmask,
-        '--lowerip', start_ip, '--upperip', end_ip, '--enable']
-    if result.status != 0
-      raise 'Unexpected error code returned by VirtualBox'
+  # @param [String, VirtualBox::Net] net_or_name the name of the VirtualBox
+  #     virtual network that this server will be connected to
+  # @return [VirtualBox::Net::Dhcp] self, for easy call chaining
+  def add(net_or_name)
+    command = ['VBoxManage', 'dhcpserver', 'add', '--ip', ip,
+        '--netmask', netmask, '--lowerip', start_ip, '--upperip', end_ip,
+        '--enable']
+    if net_or_name.kind_of? VirtualBox::Net
+      command.push '--ifname', net_or_name.if_name
+    else
+      command.push '--netname', net_or_name
     end
+
+    VirtualBox.run_command! command
     self
   end
   
   # Removes this DHCP server from VirtualBox.
   #
-  # @return [VirtualBox::Dhcp] self, for easy call chaining
-  def remove
-    VirtualBox.run_command ['VBoxManage', 'dhcpserver', 'remove', '--netname',
-                            net_name]
+  # @param [String, VirtualBox::Net] net_or_name the name of the VirtualBox
+  #     virtual network that this server was connected to
+  # @return [VirtualBox::Net::Dhcp] self, for easy call chaining
+  def remove(net_or_name)
+    command = ['VBoxManage', 'dhcpserver', 'remove']
+    if net_or_name.kind_of? VirtualBox::Net
+      command.push '--ifname', net_or_name.if_name
+    else
+      command.push '--netname', net_or_name
+    end
+
+    VirtualBox.run_command command
     self
   end
   
   # The DHCP servers added to with VirtualBox.
   #
-  # @return [Array<VirtualBox::Dhcp>] all the DHCP servers added to VirtualBox
+  # @return [Hash<String, VirtualBox::Dhcp>] all the DHCP servers added to
+  #     VirtualBox, indexed by the name of the virtual network that they serve
   def self.all
-    result = VirtualBox.run_command ['VBoxManage', '--nologo', 'list', '--long',
-                                     'dhcpservers']
-    if result.status != 0
-      raise 'Unexpected error code returned by VirtualBox'
-    end
-    result.output.split("\n\n").
-                  map { |dhcp_info| new.from_dhcp_info(dhcp_info) }
+    output = VirtualBox.run_command! ['VBoxManage', '--nologo', 'list',
+                                      '--long', 'dhcpservers']
+    Hash[output.split("\n\n").map { |dhcp_info|
+      dhcp = new
+      if_name = dhcp.from_dhcp_info(dhcp_info)
+      [if_name, dhcp]
+    }]
   end
   
   # Parses information about a DHCP server returned by VirtualBox.
@@ -115,18 +116,18 @@ class Dhcp
   # The parsed information is used to replace this network's specification.
   # @param [String] dhcp_info output from "VBoxManage list --long dhcpservers"
   #                           for one server
-  # @return [VirtualBox::Dhcp] self, for easy call chaining
+  # @return [String] the name of the virtual network served by this DHCP server
   def from_dhcp_info(dhcp_info)
     info = Hash[dhcp_info.split("\n").map { |line|
       line.split(':', 2).map(&:strip)
     }]
 
-    self.net_name = info['NetworkName']
     self.ip = info['IP']
     self.netmask = info['NetworkMask']
     self.start_ip = info['lowerIPAddress']
     self.end_ip = info['upperIPAddress']
-    self
+
+    info['NetworkName']
   end
   
   # Converts an IP number into a string.
@@ -144,6 +145,8 @@ class Dhcp
   def self.ip_stob(ip_string)
     ip_string.split('.').map(&:to_i).pack('C*').unpack('N').first
   end
-end  # class VirtualBox::Dhcp
+end  # class VirtualBox::Net::Dhcp
+
+end  # class VirtualBox::Net
 
 end  # namespace VirtualBox

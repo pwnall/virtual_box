@@ -6,15 +6,15 @@ describe VirtualBox::Vm do
       @vm = VirtualBox::Vm.new
     end
     
-    it 'should receive a name' do
+    it 'receives a name' do
       @vm.name.wont_be_nil
     end
     
-    it 'should receive an UID' do
+    it 'receives an UID' do
       @vm.uid.wont_be_nil
     end
     
-    it 'should be unregistered' do
+    it 'is unregistered' do
       @vm.wont_be :registered?
     end
     
@@ -27,11 +27,11 @@ describe VirtualBox::Vm do
         @vm.unregister
       end
       
-      it 'should know it is registered' do
+      it 'knows it is registered' do
         @vm.must_be :registered?
       end
       
-      it 'should show up on the list of registered VM UIDs' do
+      it 'shows up on the list of registered VM UIDs' do
         uids = VirtualBox::Vm.registered_uids
         uids.must_include @vm.uid
       end
@@ -45,7 +45,7 @@ describe VirtualBox::Vm do
           sleep 0.5  # VirtualBox will barf if we unregister the VM right away.
         end
         
-        it 'should show up on the list of started VM UIDs' do
+        it 'shows up on the list of started VM UIDs' do
           uids = VirtualBox::Vm.started_uids
           uids.must_include @vm.uid
         end

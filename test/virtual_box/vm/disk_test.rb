@@ -6,11 +6,11 @@ describe VirtualBox::Vm::Disk do
       @disk = VirtualBox::Vm::Disk.new :file => 'disk.iso'      
     end
     
-    it 'should guess media type' do
+    it 'guesses media type' do
       @disk.media.must_equal :dvd
     end
     
-    it 'should guess image type' do
+    it 'guesses image type' do
       @disk.format.must_equal :raw
     end
   end
@@ -29,19 +29,19 @@ describe VirtualBox::Vm::Disk do
         File.unlink vmdk_path if File.exist?(vmdk_path)
       end
       
-      it 'should create a small file' do
+      it 'creates a small file' do
         File.stat(vmdk_path).size.must_be :<, 256 * 1024
       end
       
-      it 'should return a Disk pointing to the file' do
+      it 'returns a Disk pointing to the file' do
         @disk.file.must_equal vmdk_path
       end
       
-      it 'should return a HDD Disk' do
+      it 'returns a HDD Disk' do
         @disk.media.must_equal :disk
       end
       
-      it 'should return a VMDK Disk' do
+      it 'returns a VMDK Disk' do
         @disk.format.must_equal :vmdk
       end
     end
@@ -59,19 +59,19 @@ describe VirtualBox::Vm::Disk do
         File.unlink vdi_path if File.exist?(vdi_path)
       end
       
-      it 'should create a 16-megabyte file' do
+      it 'creates a 16-megabyte file' do
         (File.stat(vdi_path).size / (1024 * 1024)).must_equal 16
       end
       
-      it 'should return a Disk pointing to the file' do
+      it 'returns a Disk pointing to the file' do
         @disk.file.must_equal vdi_path
       end
       
-      it 'should return a HDD Disk' do
+      it 'returns a HDD Disk' do
         @disk.media.must_equal :disk
       end
       
-      it 'should return a VDI Disk' do
+      it 'returns a VDI Disk' do
         @disk.format.must_equal :vdi
       end
     end
@@ -106,7 +106,7 @@ describe VirtualBox::Vm::Disk do
       end
     end
     
-    it 'should push/pull specs correctly' do
+    it 'pushes/pulls specs correctly' do
       vm = VirtualBox::Vm.new :uid => @vm.uid
       vm.pull_config
       vm.io_buses.map { |io_bus| io_bus.to_hash }.

@@ -5,16 +5,16 @@ describe VirtualBox::Vm::Board do
     before do
       @types = VirtualBox::Vm::Board.os_types
     end
-    it 'should map linux 2.6' do
+    it 'maps linux 2.6' do
       @types.must_include :linux26
     end
     
-    it 'should include linux 2.6 ID' do
+    it 'includes linux 2.6 ID' do
       @types.must_include 'linux26'
       @types.must_include 'Linux26'
     end
 
-    it 'should include linux 2.6 description' do
+    it 'includes linux 2.6 description' do
       @types.must_include 'Linux 2.6'
     end
   end
@@ -29,7 +29,7 @@ describe VirtualBox::Vm::Board do
       @vm.unregister
     end
     
-    it 'should push/pull specification correctly' do
+    it 'pushes/pulls specification correctly' do
       vm = VirtualBox::Vm.new :uid => @vm.uid
       
       vm.pull_config

@@ -3,11 +3,11 @@ module VirtualBox
   
 end
 
-require 'hashie/mash'
 require 'posix/spawn'
 require 'uuid'
 
 require 'virtual_box/cli.rb'
+require 'virtual_box/error.rb'
 require 'virtual_box/version.rb'
 
 require 'virtual_box/vm.rb'
@@ -16,5 +16,5 @@ require 'virtual_box/vm/disk.rb'
 require 'virtual_box/vm/io_bus.rb'
 require 'virtual_box/vm/nic.rb'
 
-require 'virtual_box/dhcp.rb'
 require 'virtual_box/net.rb'
+require 'virtual_box/net/dhcp.rb'

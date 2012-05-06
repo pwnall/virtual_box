@@ -34,6 +34,21 @@ class Net
   # @return [String]
   attr_reader :mac
   
+  # The VirtualBox-powered DHCP server configured to serve this interface.
+  # @return [VirtualBox::Net::Dhcp, NilClass]
+  attr_accessor :dhcp
+  
+  undef :dhcp=
+  def dhcp=(new_dhcp)
+    if new_dhcp.nil?
+      @dhcp = nil
+    elsif new_dhcp.kind_of? VirtualBox::Net::Dhcp
+      @dhcp = new_dhcp
+    else
+      @dhcp = VirtualBox::Net::Dhcp.new new_dhcp
+    end
+  end
+  
   # Creates a virtual network specification rule based on the given attributes.
   #
   # The network is not automatically added to VirtualBox.
@@ -48,7 +63,7 @@ class Net
   # @return [Hash<Symbol, Object>] Ruby-friendly Hash that can be used to
   #                                re-create this virtual network specification
   def to_hash
-    { :ip => ip, :netmask => netmask }
+    { :ip => ip, :netmask => netmask, :dhcp => dhcp && dhcp.to_hash }
   end
   
   # True if this virtual network has been added to VirtualBox.
@@ -68,12 +83,9 @@ class Net
     end
     
     # Create the network and pull its name.
-    result = VirtualBox.run_command ['VBoxManage', '--nologo', 'hostonlyif',
-        'create']
-    if result.status != 0
-      raise 'Unexpected error code returned by VirtualBox'
-    end
-    unless match = /^interface\s+'(.*)'\s+.*created/i.match(result.output)
+    output = VirtualBox.run_command! ['VBoxManage', '--nologo', 'hostonlyif',
+                                      'create']
+    unless match = /^interface\s+'(.*)'\s+.*created/i.match(output)
       raise "VirtualBox output does not include interface name"
     end
     @if_name = match[1]
@@ -85,15 +97,15 @@ class Net
     @mac = network.mac
     
     if (ip && ip != network.ip) || (netmask && netmask != network.netmask)
-      result = VirtualBox.run_command ['VBoxManage', '--nologo', 'hostonlyif',
+      VirtualBox.run_command! ['VBoxManage', '--nologo', 'hostonlyif',
           'ipconfig', if_name, '--ip', ip, '--netmask', netmask]
-      if result.status != 0
-        raise 'Unexpected error code returned by VirtualBox'
-      end
     else
       self.ip = network.ip
       self.netmask = network.netmask
     end
+    
+    # Register the DHCP server, if it's connected.
+    dhcp.add self if dhcp
     
     self
   end
@@ -103,22 +115,25 @@ class Net
   # @return [VirtualBox::Net] self, for easy call chaining
   def remove
     unless if_name.nil?
+      dhcp.remove self if dhcp
       VirtualBox.run_command ['VBoxManage', 'hostonlyif', 'remove', if_name]
     end
     self
   end
   
-  # The DHCP servers added to with VirtualBox.
+  # The virtual networks added to VirtualBox.
   #
-  # @return [Array<VirtualBox::Dhcp>] all the DHCP servers added to VirtualBox
+  # @return [Array<VirtualBox::Net>] all the DHCP servers added to VirtualBox
   def self.all
-    result = VirtualBox.run_command ['VBoxManage', '--nologo', 'list', '--long',
-                                     'hostonlyifs']
-    if result.status != 0
-      raise 'Unexpected error code returned by VirtualBox'
+    dhcps = VirtualBox::Net::Dhcp.all
+    
+    output = VirtualBox.run_command! ['VBoxManage', '--nologo', 'list',
+                                      '--long', 'hostonlyifs']
+    output.split("\n\n").map do |net_info|
+      net = new.from_net_info(net_info)
+      net.dhcp = dhcps[net.name]
+      net
     end
-    result.output.split("\n\n").
-                  map { |net_info| new.from_net_info(net_info) }
   end
   
   # Parses information about a DHCP server returned by VirtualBox.
@@ -139,6 +154,37 @@ class Net
     self.netmask = info['NetworkMask']
     self
   end
-end  # class VirtualBox::Dhcp
+  
+  
+  # Information about the NICs attached to the computer.
+  #
+  # @return [Array<Hash<Symbol, Object>>] an array with one hash per NIC; hashes
+  #     have the following keys:
+  #     :name:: the NIC device's name (use when setting a Nic's net_name)
+  #     :ip:: the IP address (compare against 0.0.0.0 to see if it's live)
+  #     :mask:: the network mask used to figure out broadcasting
+  #     :mac:: the NICs MAC address (format: "AB0123456789")
+  def self.host_nics
+    @host_nics ||= host_nics!
+  end
+
+  # Queries VirtualBox for the network interfaces on the computer.
+  #
+  # @return (see .host_nics)
+  def self.host_nics!
+    output = VirtualBox.run_command! ['VBoxManage', '--nologo', 'list',
+                                      '--long', 'hostifs']
+    output.split("\n\n").map do |nic_info|
+      info = Hash[nic_info.split("\n").map { |line|
+        line.split(':', 2).map(&:strip)
+      }]
+      {
+        :name => info['Name'], :ip => info['IPAddress'],
+        :mask => info['NetworkMask'],
+        :mac => info['HardwareAddress'].upcase.gsub(/[^0-9A-F]/, '')
+      }
+    end
+  end
+end  # class VirtualBox::Net
 
 end  # namespace VirtualBox

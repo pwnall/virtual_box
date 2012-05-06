@@ -1,6 +1,5 @@
 source :rubygems
 
-gem 'hashie', '>= 0.4.0'
 gem 'posix-spawn', '>= 0.3.6'
 gem 'uuid', '>= 2.3.5'
 

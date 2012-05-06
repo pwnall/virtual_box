@@ -177,39 +177,6 @@ class Nic
     { :mode => mode, :chip => chip, :net_name => net_name, :mac => mac,
       :trace_file => trace_file }
   end
-  
-  # Information about the NICs attached to the computer.
-  #
-  # @return [Array<Hash<Symbol, Object>>] an array with one hash per NIC; hashes
-  #     have the following keys:
-  #     :id:: the inteface id (use when setting a Nic's net_id)
-  #     :ip:: the IP address (check for 0.0.0.0 to see if it's live)
-  #     :mask:: the netmask
-  #     :mac:: the NICs MAC address
-  def self.host_nics
-    @host_nics ||= get_host_nics
-  end
-
-  # Queries VirtualBox for the network interfaces on the computer.
-  #
-  # @return (see .host_nics)
-  def self.get_host_nics    
-    result = VirtualBox.run_command ['VBoxManage', '--nologo', 'list',
-                                     '--long', 'hostifs']
-    if result.status != 0
-      raise 'Unexpected error code returned by VirtualBox'
-    end
-    
-    result.output.split("\n\n").map do |nic_info|
-      i = Hash[nic_info.split("\n").map { |line|
-        line.split(':', 2).map(&:strip)
-      }]
-      {
-        :id => i['Name'], :ip => i['IPAddress'], :mask => i['NetworkMask'],
-        :mac => i['HardwareAddress'].upcase.gsub(/[^0-9A-F]/, '')
-      }
-    end
-  end
 end  # class VirtualBox::Vm::Nic
 
 end  # class VirtualBox::Vm

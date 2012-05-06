@@ -209,11 +209,8 @@ class IoBus
   #                            be removed from
   # @return [VirtualBox::Vm::IoBus] self, for easy call chaining
   def remove_from(vm)
-    result = VirtualBox.run_command ['VBoxManage', '--nologo', 'storagectl',
-                                     vm.uuid, '--name', name, '--remove']
-    if result.status != 0
-      raise 'Unexpected error code returned by VirtualBox'
-    end
+    VirtualBox.run_command! ['VBoxManage', '--nologo', 'storagectl', vm.uuid,
+                             '--name', name, '--remove']
     self
   end
 
@@ -223,11 +220,8 @@ class IoBus
   #                            added to
   # @return [VirtualBox::Vm::IoBus] self, for easy call chaining
   def add_bus_to(vm)
-    command = ['VBoxManage', '--nologo', 'storagectl', vm.uid].concat to_params
-    result = VirtualBox.run_command command
-    if result.status != 0
-      raise 'Unexpected error code returned by VirtualBox'
-    end
+    VirtualBox.run_command! ['VBoxManage', '--nologo', 'storagectl',
+                             vm.uid].concat(to_params)
     self
   end
   

@@ -272,13 +272,9 @@ class Board
   # @return [Hash<String, String> mapping from each VirtualBox OS type ID to its
   #     description
   def self.list_os_types
-    result = VirtualBox.run_command ['VBoxManage', '--nologo', 'list',
-                                     '--long', 'ostypes']
-    if result.status != 0
-      raise 'Unexpected error code returned by VirtualBox'
-    end
-    
-    types = result.output.split("\n\n").map do |os_info|
+    output = VirtualBox.run_command! ['VBoxManage', '--nologo', 'list',
+                                      '--long', 'ostypes']
+    types = output.split("\n\n").map do |os_info|
       i = Hash[os_info.split("\n").map { |line| line.split(':').map(&:strip) }]
       [i['ID'], i['Description']]
     end

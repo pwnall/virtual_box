@@ -8,10 +8,10 @@ module VirtualBox
   # The open-source edition of VirtualBox has some limitations, such as no
   # support for RDP and USB devices.
   def self.ose?
-    unless version.edition
+    unless version[:edition]
       raise 'VirtualBox is not installed on this machine.'
     end
-    version.edition == 'OSE'
+    version[:edition] == 'OSE'
   end
   
   # Version information about the VirtualBox package installed on this machine.
@@ -26,12 +26,12 @@ module VirtualBox
     return @version_info unless @version_info.nil?
     
     cmd_result = run_command ['VBoxManage', '--version']
-    if cmd_result.status != 0
-      @version_info = Hashie::Mash.new
+    if cmd_result[:status] != 0
+      @version_info = {}
       return @version_info
     end
     
-    output = cmd_result.output.strip
+    output = cmd_result[:output].strip
 
     if revision_offset = output.rindex('r')
       revision = output[revision_offset + 1, output.length].to_i
@@ -47,8 +47,8 @@ module VirtualBox
       edition = ''
     end
     
-    @version_info = Hashie::Mash.new :release => output, :svn => revision,
-                                     :edition => edition
+    @version_info = { :release => output, :svn => revision,
+                      :edition => edition }
   end
   
   # Removes the cached information on the VirtualBox package version.

@@ -119,14 +119,8 @@ class Vm
   #
   # @return [VirtualBox::Vm] self, for easy call chaining
   def register
-    unregister if registered?
-    
-    result = VirtualBox.run_command ['VBoxManage', 'createvm',
-        '--name', name, '--uuid', uid, '--register']
-    if result.status != 0
-      raise 'Unexpected error code returned by VirtualBox'
-    end
-    
+    VirtualBox.run_command! ['VBoxManage', 'createvm', '--name', name,
+                             '--uuid', uid, '--register']
     begin
       push_config
     rescue
@@ -151,11 +145,8 @@ class Vm
   def start
     register unless registered?
     
-    result = VirtualBox.run_command ['VBoxManage', '--nologo', 'startvm', uid,
-                                     '--type', gui ? 'gui' : 'headless']
-    if result.status != 0
-      raise 'Unexpected error code returned by VirtualBox'
-    end
+    VirtualBox.run_command! ['VBoxManage', '--nologo', 'startvm', uid,
+                             '--type', gui ? 'gui' : 'headless']
     self
   end
   
@@ -185,11 +176,8 @@ class Vm
       'injectnmi'
     end
 
-    result = VirtualBox.run_command ['VBoxManage', '--nologo', 'controlvm', uid,
-                                     action]
-    if result.status != 0
-      raise 'Unexpected error code returned by VirtualBox'
-    end
+    VirtualBox.run_command! ['VBoxManage', '--nologo', 'controlvm', uid,
+                             action]
     self
   end
   
@@ -197,11 +185,8 @@ class Vm
   #
   # @return [Array<String>] UUIDs for VMs that VirtualBox is aware of
   def self.registered_uids
-    result = VirtualBox.run_command ['VBoxManage', '--nologo', 'list', 'vms']
-    if result.status != 0
-      raise 'Unexpected error code returned by VirtualBox'
-    end
-    result.output.split("\n").map do |id_info|
+    output = VirtualBox.run_command! ['VBoxManage', '--nologo', 'list', 'vms']
+    output.split("\n").map do |id_info|
       uid_offset = id_info.rindex(?{) + 1
       uid = id_info[uid_offset...-1]  # Exclude the closing }
     end
@@ -211,12 +196,9 @@ class Vm
   #
   # @return [Array<String>] UUIDs for VMs that are running in VirtualBox
   def self.started_uids
-    result = VirtualBox.run_command ['VBoxManage', '--nologo', 'list',
-                                     'runningvms']
-    if result.status != 0
-      raise 'Unexpected error code returned by VirtualBox'
-    end
-    result.output.split("\n").map do |id_info|
+    output = VirtualBox.run_command! ['VBoxManage', '--nologo', 'list',
+                                      'runningvms']
+    output.split("\n").map do |id_info|
       uid_offset = id_info.rindex(?{) + 1
       uid = id_info[uid_offset...-1]  # Exclude the closing }
     end
@@ -235,9 +217,7 @@ class Vm
         command.concat nic.to_params(index + 1)
       end
     end
-    if VirtualBox.run_command(command).status != 0
-      raise 'Unexpected error code returned by VirtualBox'
-    end
+    VirtualBox.run_command! command
     
     io_buses.each { |bus| bus.add_to self }
      
@@ -248,13 +228,9 @@ class Vm
   #
   # @return [VirtualBox::Vm] self, for easy call chaining
   def pull_config
-    result = VirtualBox.run_command ['VBoxManage', '--nologo', 'showvminfo',
-                                     '--machinereadable', uid]
-    if result.status != 0
-      raise 'Unexpected error code returned by VirtualBox'
-    end
-    
-    config = self.class.parse_machine_readable result.output
+    output = VirtualBox.run_command! ['VBoxManage', '--nologo', 'showvminfo',
+                                      '--machinereadable', uid]
+    config = self.class.parse_machine_readable output
     
     self.name = config['name']
     self.uid = config['UUID']

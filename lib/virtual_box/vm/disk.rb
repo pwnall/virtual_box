@@ -55,12 +55,9 @@ class Disk
     when :dvd
       'dvddrive'
     end
-    result = VirtualBox.run_command ['VBoxManage', '--nologo', 'storageattach',
+    VirtualBox.run_command! ['VBoxManage', '--nologo', 'storageattach',
         vm.uid, '--storagectl', io_bus.name, '--port', port.to_s,
         '--device', device.to_s, '--type', media_arg, '--medium', file]
-    if result.status != 0
-      raise 'Unexpected error code returned by VirtualBox'
-    end
     self
   end
   
@@ -90,13 +87,9 @@ class Disk
     memo = options[:memo] || 'Created with the virtual_box RubyGem'
     variant = options[:prealloc] ? 'Fixed' : 'Standard'
     
-    result = VirtualBox.run_command ['VBoxManage', '--nologo', 'createhd',
+    VirtualBox.run_command! ['VBoxManage', '--nologo', 'createhd',
         '--filename', path, '--size', size_mb.to_s, '--format', format.to_s,
         '--variant', variant]
-    if result.status != 0
-      raise 'Unexpected error code returned by VirtualBox'
-    end
-    
     new :file => path, :format => format, :media => :disk
   end
   
