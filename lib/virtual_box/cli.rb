@@ -14,16 +14,12 @@ module VirtualBox
 #     :output:: a string with the command's output
 def self.run_command(args)
   begin
-    #output = Kernel.`(Shellwords.shelljoin(args))
-    #Hashie::Mash.new :status => $CHILD_STATUS.exitstatus, :output => output
-    command_line = [args.first].concat args
-    pid, stdin_pipe, stdout_pipe, stderr_pipe = POSIX::Spawn.popen4 args
-    stdin_pipe.close
-    output = []
-    output << stdout_pipe.read rescue nil
-    _, status = Process::wait2 pid
-    output << stdout_pipe.read rescue nil
-    Hashie::Mash.new :status => status.exitstatus, :output => output.join('')
+    output = Kernel.`(Shellwords.shelljoin(args) + ' 2>&1')
+    Hashie::Mash.new :status => $CHILD_STATUS.exitstatus, :output => output
+
+    # TODO(pwnall): this should work, but it makes VirtualBox slow as hell
+    # child = POSIX::Spawn::Child.new(*args)
+    # Hashie::Mash.new :status => child.status.exitstatus, :output => child.out
   rescue SystemCallError
     Hashie::Mash.new :status => -1, :output => ''
   end

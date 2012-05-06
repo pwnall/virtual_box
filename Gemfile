@@ -10,6 +10,7 @@ group :development do
   gem 'minitest', '>= 2.12.1'
   gem 'mocha', '>= 0.11.0', :require => false
   gem 'net-ssh', '>= 2.3.0', :require => 'net/ssh'
+  gem 'redcarpet', '>= 2.1.1'  # Yard needs this to parse Markdown.
   gem 'simplecov', '>= 0.6.1'
-  gem 'yard', '>= 0.7.5'
+  gem 'yard', '>= 0.8.1'
 end
