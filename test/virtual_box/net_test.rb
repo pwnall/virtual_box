@@ -20,7 +20,9 @@ describe VirtualBox::Net do
       end
       
       it 'has its device name show up in ifconfig' do
-        `ifconfig -a`.must_include card[:name]
+        # NOTE: on OSX, recent VirtualBox builds return user-friendly NIC names,
+        #       such as "en0: Ethernet" instead of "en0"
+        `ifconfig -a`.must_include card[:name].split(':', 2).first
       end
     end
   end
