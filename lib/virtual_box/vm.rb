@@ -167,18 +167,42 @@ class Vm
   #   :nmi:: NMI (non-maskable interrupt)
   # @return [VirtualBox::Vm] self, for easy call chaining
   def control(action)
-    action = case action
-    when :kill
-      'poweroff'
-    when :power_button
-      'acpipowerbutton'
-    when :nmi
-      'injectnmi'
-    end
+    result = nil
+    
+    3.times do
+      action_arg = case action
+      when :kill
+        'poweroff'
+      when :power_button
+        'acpipowerbutton'
+      when :nmi
+        'injectnmi'
+      else
+        action
+      end
 
-    VirtualBox.run_command! ['VBoxManage', '--nologo', 'controlvm', uid,
-                             action]
+      result =  VirtualBox.run_command ['VBoxManage', '--nologo', 'controlvm',
+                                        uid, action_arg]
+      return self if result[:status] == 0
+      
+      # Perhaps the VM is already powered off?
+      if action == :kill || action == :power_button
+        return self unless live?
+        sleep 0.1
+      else
+        break
+      end
+    end
+    raise VirtualBox::Error, result
+    
     self
+  end
+  
+  # True if this virtual machine is running inside VirtualBox.
+  #
+  # @return [Boolean] true if this VM is being simulated by VirtualBox
+  def live?
+    (uid && self.class.started_uids.include?(uid)) ? true : false
   end
   
   # The UUIDs of all VMs that are registered with VirtualBox.

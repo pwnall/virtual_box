@@ -16,7 +16,7 @@ class Error < StandardError
   #     VirtualBox.run call.
   def initialize(cli_result)
     @exit_code = cli_result[:status]
-    @output = output
+    @output = cli_result[:output]
     
     super "VirtualBox CLI exited with code #{@exit_code}:\n#{@output}\n"
   end

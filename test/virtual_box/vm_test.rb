@@ -18,7 +18,7 @@ describe VirtualBox::Vm do
       @vm.wont_be :registered?
     end
     
-    describe 'registered' do
+    describe '#register' do
       before do
         @vm.register
       end
@@ -36,18 +36,42 @@ describe VirtualBox::Vm do
         uids.must_include @vm.uid
       end
       
-      describe 'started' do
+      it 'is not live' do
+        @vm.live?.must_equal false
+      end
+      
+      describe '#stop' do
+        it "doesn't crash" do
+          @vm.stop
+          @vm.live?.must_equal false
+        end
+      end
+      
+      describe '#start' do
         before do
           @vm.start
         end        
         after do
           @vm.stop
-          sleep 0.5  # VirtualBox will barf if we unregister the VM right away.
         end
         
         it 'shows up on the list of started VM UIDs' do
           uids = VirtualBox::Vm.started_uids
           uids.must_include @vm.uid
+        end
+
+        it 'is live' do
+          @vm.live?.must_equal true
+        end
+        
+        describe '#stop' do
+          before do
+            @vm.stop
+          end
+          
+          it 'is no longer live' do
+            @vm.live?.must_equal false
+          end
         end
       end
     end

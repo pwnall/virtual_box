@@ -31,11 +31,7 @@ describe 'VirtualBox' do
     end
     
     after do
-      unless @vm.nil?
-        @vm.stop
-        # Let VirtualBox stop the VM, so that it can be unregistered.
-        Kernel.sleep 0.5
-      end
+      @vm.stop unless @vm.nil?
     end
     
     it 'responds to a SSH connection' do
