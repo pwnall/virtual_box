@@ -15,7 +15,7 @@ describe 'VirtualBox' do
         :io_buses => [{ :bus => :ide,
                         :disks => [{ :file => iso_file, :port => 1 }] }],
         :nics => [{ :mode => :host, :chip => :virtual,
-                    :net_name => @net.if_name }]).register
+                    :net_name => @net.name }]).register
   end
   
   after do

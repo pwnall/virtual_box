@@ -15,7 +15,7 @@ describe VirtualBox::Vm::Disk do
     end
   end
   
-  describe 'create' do
+  describe '#create' do
     describe '16-megabyte VMDK flexible' do
       let(:vmdk_path) { '/tmp/disk.vmdk' }
     
@@ -43,6 +43,13 @@ describe VirtualBox::Vm::Disk do
       
       it 'returns a VMDK Disk' do
         @disk.format.must_equal :vmdk
+      end
+      
+      describe '#drop' do
+        before { @disk.drop }
+        it 'removes the file' do
+          File.exist?(vmdk_path).must_equal false
+        end
       end
     end
     

@@ -71,7 +71,7 @@ class Dhcp
         '--netmask', netmask, '--lowerip', start_ip, '--upperip', end_ip,
         '--enable']
     if net_or_name.kind_of? VirtualBox::Net
-      command.push '--ifname', net_or_name.if_name
+      command.push '--ifname', net_or_name.name
     else
       command.push '--netname', net_or_name
     end
@@ -88,7 +88,7 @@ class Dhcp
   def remove(net_or_name)
     command = ['VBoxManage', 'dhcpserver', 'remove']
     if net_or_name.kind_of? VirtualBox::Net
-      command.push '--ifname', net_or_name.if_name
+      command.push '--ifname', net_or_name.name
     else
       command.push '--netname', net_or_name
     end

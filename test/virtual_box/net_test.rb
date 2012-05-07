@@ -49,12 +49,12 @@ describe VirtualBox::Net do
       end
       
       it 'has an interface name that shows up in the ifconfig output' do
-        @net.if_name.wont_be_nil
-        `ifconfig -a`.must_include @net.if_name
+        @net.name.wont_be_nil
+        `ifconfig -a`.must_include @net.name
       end
       
-      it 'has a name' do
-        @net.name.wont_be_nil
+      it 'has a VirtualBox network name' do
+        @net.vbox_name.wont_be_nil
       end
       
       it 'has a MAC address' do
@@ -90,13 +90,13 @@ describe VirtualBox::Net do
       end
       
       it 'has an interface name that shows up in the ifconfig output' do
-        @net.if_name.wont_be_nil
-        `ifconfig -a`.must_include @net.if_name
+        @net.name.wont_be_nil
+        `ifconfig -a`.must_include @net.name
       end
       
       it 'shows up on the list of live networks' do
         networks = VirtualBox::Net.all
-        network = networks.find { |n| n.if_name == @net.if_name }
+        network = networks.find { |n| n.name == @net.name }
         network.to_hash.must_equal @net.to_hash
       end      
     end
@@ -124,14 +124,12 @@ describe VirtualBox::Net do
       end
       
       it 'has an interface name that shows up in the ifconfig output' do
-        @net.if_name.wont_be_nil
-        `ifconfig -a`.must_include @net.if_name
+        @net.name.wont_be_nil
+        `ifconfig -a`.must_include @net.name
       end
       
       it 'shows up on the list of live networks' do
-        networks = VirtualBox::Net.all
-        network = networks.find { |n| n.if_name == @net.if_name }
-        network.to_hash.must_equal @net.to_hash
+        VirtualBox::Net.named(@net.name).to_hash.must_equal @net.to_hash
       end      
     end
   end

@@ -4,6 +4,36 @@ This gem is a Ruby API for VirtualBox, Sun's open-source virtualization software
 that supports Linux, Mac OS X, and Windows.
 
 
+## Usage
+
+virtual_box is mainly intended to help out with testing. The snippet below shows
+a complete setup / teardown scenario.
+
+```ruby
+setup do
+	vdi_file = '/tmp/disk.vdi'
+	@disk = VirtualBox::Vm::Disk.create :file => vdi_file,
+	                                    :size => 16 * 1024 * 1024
+  iso_file = 'test/fixtures/tinycore/remix.iso'
+  @net = VirtualBox::Net.new(:ip => '192.168.66.6', :netmask => '255.255.255.0',
+                             :dhcp => { :start_ip => '192.168.66.66' }).add
+
+  @vm = VirtualBox::Vm.new(
+      :board => { :ram => 256, :video_ram => 16, :os => :linux26 },
+      :io_buses => [{ :bus => :ide,
+                      :disks => [{ :file => iso_file, :port => 1 }] },
+                    { :bus => :sata, :disks => [@disk] }],
+      :nics => [{ :mode => :host, :chip => :virtual,
+                  :net_name => @net.name }]).register
+end
+  
+teardown do
+  @vm.unregister
+  @net.remove
+  @disk.drop
+end
+```
+
 ## Features
 
 Currently, the gem supports the following features:

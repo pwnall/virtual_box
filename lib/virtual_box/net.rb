@@ -16,15 +16,17 @@ class Net
   # attribute is read-only, and it is automatically set when the network is
   # registered with VirtualBox.
   # @return [String]
-  attr_reader :if_name
+  attr_reader :name
 
   # The name of the VirtualBox internal network.
+  #
+  # This is most likely not useful outside the VirtualBox API.
   #
   # VirtualBox's CLI does not provide a way to set the internal network name.
   # Therefore, this attribute is read-only, and it is automatically set when the
   # network is registered with VirtualBox.
   # @return [String]
-  attr_reader :name
+  attr_reader :vbox_name
   
   # The MAC address of the host's virtual NIC that's connected to this network.
   #
@@ -69,8 +71,8 @@ class Net
   # True if this virtual network has been added to VirtualBox.
   # @return [Boolean] true if this network exists, false otherwise
   def live?
-    networks = self.class.all
-    network = networks.find { |net| net.if_name == if_name }
+    networks = self.class.all false
+    network = networks.find { |net| net.name == name }
     network ? true : false
   end
   
@@ -78,7 +80,7 @@ class Net
   #
   # @return [VirtualBox::Net] self, for easy call chaining
   def add
-    unless if_name.nil?
+    unless name.nil?
       raise "Virtual network already added to VirtualBox"
     end
     
@@ -88,17 +90,16 @@ class Net
     unless match = /^interface\s+'(.*)'\s+.*created/i.match(output)
       raise "VirtualBox output does not include interface name"
     end
-    @if_name = match[1]
+    @name = match[1]
     
-    # Now list all the networks to pull the rest of the information.
-    networks = self.class.all
-    network = networks.find { |net| net.if_name == if_name }
-    @name = network.name
+    # Query VirtualBox to pull the rest of the information.
+    network = self.class.named name
+    @vbox_name = network.vbox_name
     @mac = network.mac
     
     if (ip && ip != network.ip) || (netmask && netmask != network.netmask)
       VirtualBox.run_command! ['VBoxManage', '--nologo', 'hostonlyif',
-          'ipconfig', if_name, '--ip', ip, '--netmask', netmask]
+          'ipconfig', name, '--ip', ip, '--netmask', netmask]
     else
       self.ip = network.ip
       self.netmask = network.netmask
@@ -114,26 +115,42 @@ class Net
   #
   # @return [VirtualBox::Net] self, for easy call chaining
   def remove
-    unless if_name.nil?
+    unless name.nil?
       dhcp.remove self if dhcp
-      VirtualBox.run_command ['VBoxManage', 'hostonlyif', 'remove', if_name]
+      VirtualBox.run_command ['VBoxManage', 'hostonlyif', 'remove', name]
     end
     self
   end
   
   # The virtual networks added to VirtualBox.
   #
+  # @param [Boolean] with_dhcp if false, the returned VirtualBox::Net instances
+  #     will have their dhcp property set to nil, even if they have DHCP
+  #     servers; this saves a CLI call when DHCP information is not needed
   # @return [Array<VirtualBox::Net>] all the DHCP servers added to VirtualBox
-  def self.all
-    dhcps = VirtualBox::Net::Dhcp.all
+  def self.all(with_dhcp = true)
+    dhcps = with_dhcp ? VirtualBox::Net::Dhcp.all : {}
     
     output = VirtualBox.run_command! ['VBoxManage', '--nologo', 'list',
                                       '--long', 'hostonlyifs']
     output.split("\n\n").map do |net_info|
-      net = new.from_net_info(net_info)
-      net.dhcp = dhcps[net.name]
+      net = new.from_net_info net_info
+      net.dhcp = dhcps[net.vbox_name]
       net
     end
+  end
+  
+  # The virtual network added to VirtualBox with a given name.
+  #
+  # This is a convenience for calling find on Net.all, so it's just as
+  # inefficient.
+  # @param [String] name the name to look for
+  # @param [Boolean] with_dhcp if false, the returned VirtualBox::Net instance
+  #     will have its dhcp property set to nil, even if it has a DHCP
+  #     server; this saves a CLI call when DHCP information is not needed
+  def self.named(name, with_dhcp = true)
+    networks = all with_dhcp
+    networks.find { |net| net.name == name }
   end
   
   # Parses information about a DHCP server returned by VirtualBox.
@@ -147,8 +164,8 @@ class Net
       line.split(':', 2).map(&:strip)
     }]
     
-    @if_name = info['Name']
-    @name = info['VBoxNetworkName']
+    @name = info['Name']
+    @vbox_name = info['VBoxNetworkName']
     @mac = info['HardwareAddress'].upcase.gsub(/[^0-9A-F]/, '')
     self.ip = info['IPAddress']
     self.netmask = info['NetworkMask']

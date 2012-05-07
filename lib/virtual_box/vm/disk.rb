@@ -93,6 +93,16 @@ class Disk
     new :file => path, :format => format, :media => :disk
   end
   
+  # Removes the image file backing this disk.
+  #
+  # The method name is drop, as in "DROP TABLE". It doesn't remove the disk from
+  # any VM, it just removes the file.
+  # @return [VirtualBox::Vm::Disk] self, for easy call chaining
+  def drop
+    File.unlink @file if File.exist?(@file)
+    self
+  end
+  
   # Disk image format based on the extension in the file name.
   def self.guess_image_format(image_file)
     parts = File.basename(image_file).split('.')
