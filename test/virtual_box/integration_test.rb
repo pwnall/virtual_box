@@ -17,31 +17,40 @@ describe 'VirtualBox' do
         :nics => [{ :mode => :host, :chip => :virtual,
                     :net_name => @net.name }]).register
   end
-  
+
   after do
-    @vm.unregister unless @vm.nil?
-    @net.remove unless @net.nil?
+    # @vm.unregister unless @vm.nil?
+    # @net.remove unless @net.nil?
   end
-  
+
   describe 'after VM start' do
     before do
       @vm.start
       # Give the VM a chance to boot and generate SSH keys.
       Kernel.sleep 3
     end
-    
+
     after do
-      @vm.stop unless @vm.nil?
+      # @vm.stop unless @vm.nil?
     end
-    
+
     it 'responds to a SSH connection' do
       output = nil
-      Net::SSH.start '192.168.66.66', 'tc', :timeout => 15,
-          :global_known_hosts_file => [], :user_known_hosts_file => [],
-          :paranoid => false, :password => '' do |ssh|
-        output = ssh.exec!('ifconfig')
+      1.upto(10) do |attempt|
+        begin
+          Net::SSH.start '192.168.66.66', 'tc', :timeout => 15,
+              :global_known_hosts_file => [], :user_known_hosts_file => [],
+              :paranoid => false, :password => '' do |ssh|
+            output = ssh.exec!('ifconfig')
+          end
+          break
+        rescue SystemCallError
+          # The NIC is not yet registered.
+          raise if attempt == 10
+          sleep 1
+        end
       end
-      
+
       output.wont_be_nil
     end
   end
